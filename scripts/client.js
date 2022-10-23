@@ -9,6 +9,7 @@ export default class Client
     Hash = ""
     Cname =""
     Cgame
+    point
     hashLetterNumber = 43
     ClientAdress;
     
@@ -18,6 +19,7 @@ export default class Client
         this.Csocket = socket;
         this.database = database;
         this.gameManager = gameManager;
+        this.point = 0
         this.ClientAdress = this.Csocket.handshake.address;
         this.setDisconnectEvent();
         this.setUserListener();
@@ -62,9 +64,9 @@ export default class Client
     {
         this.Csocket.on("join",(message)=>
         {
-            this.joinGame(message,()=>
+            this.joinGame(message,(response)=>
             {
-                this.Csocket.emit("join",)
+                this.Csocket.emit("join",response)
             });           
         })
     }
@@ -180,8 +182,8 @@ export default class Client
             return;
         }
         this.Cgame = tempGame;
-        response.data = {playerList : this.Cgame.getPlayerList()};
         this.Cgame.join(this)
+        response.data = {playerList : this.Cgame.getPlayerList()};       
         callback(response)
     }
 

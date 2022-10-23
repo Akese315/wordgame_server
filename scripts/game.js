@@ -48,7 +48,7 @@ export default class Game
         var playerListFormatted = [];
         for(var i =0; i<this.players.length; i++)
         {
-            playerListFormatted.push({pseudo : this.players[i].Cname})
+            playerListFormatted.push({pseudo : this.players[i].Cname, point : this.players[i].point})
         }
         return playerListFormatted;
     }
@@ -62,7 +62,9 @@ export default class Game
 
     alterPlayerList()
     {
-        this.io.of(this.gameHash).emit("player_change",{playerList : this.getPlayerList})
+        var list = this.getPlayerList();
+        console.log(list)
+        this.io.to(this.gameHash).emit({playerList : list })
         console.log("emitted")
     }
 }
