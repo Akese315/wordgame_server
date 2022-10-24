@@ -17,11 +17,18 @@ CREATE TABLE games (
     createdAt DATETIME NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS kanjis (
+    id integer PRIMARY KEY AUTO_INCREMENT,
+    kanji VARCHAR(1) CHARACTER SET utf8 COLLATE utf8_general_ci,
+    reading_on VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_general_ci,
+    reading_kun VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_general_ci,
+    meaning VARCHAR(255),
+    jlpt integer
+);
+
 INSERT INTO games (gameHash, ownerHash) VALUES (100000, 1234);
 
 INSERT INTO users (userHash,userName, gameHash) VALUES (1234, "Axel",100000);
-
-INSERT INTO users (userHash,userName, gameHash) VALUES (1111, "nina",100000);
 
 INSERT INTO users (userHash,userName, gameHash) VALUES (2222, "alain",100000);
 

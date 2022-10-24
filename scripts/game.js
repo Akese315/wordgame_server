@@ -1,30 +1,24 @@
+
+
 export default class Game
 {
     gameOwner
-    gameHash = "";
+    #gamehash;
     playerNumber = 0
-    players = []
-    io
+    #playerList;
     canJoin = false;
+    broadcastCallback
 
-    constructor(io)
+    constructor(broadcastCallback)
     {
-        this.io = io
-        this.setListener();
-    }
-
-    setListener()
-    {
-        this.io.of(this.gameHash).on("",()=>
-        {
-            
-        });
+        this.#playerList = new Array();
+        this.broadcastCallback = broadcastCallback;
     }
 
     setOwner(player)
     {
         this.gameOwner = player;
-        this.players.push(this.gameOwner)
+        this.#playerList.push(this.gameOwner)
         this.canJoin = true;
     }
 
@@ -39,32 +33,36 @@ export default class Game
 
     join(player)
     {
-        this.players.push(player);
+        this.#playerList.push(player);
         this.alterPlayerList();
+        return this.getPlayerList();
+    }
+
+    getGameHash()
+    {
+        return this.#gamehash;
     }
 
     getPlayerList()
     {
         var playerListFormatted = [];
-        for(var i =0; i<this.players.length; i++)
+        for(var i =0; i<this.#playerList.length; i++)
         {
-            playerListFormatted.push({pseudo : this.players[i].Cname, point : this.players[i].point})
+            playerListFormatted.push({pseudo : this.#playerList[i].Cname, point : this.#playerList[i].point})
         }
         return playerListFormatted;
     }
 
-    setGameHash(gameHash)
+    setGameHash(gamehash)
     {
-        this.gameHash = gameHash;
-        console.log(this.gameHash)        
+        this.#gamehash = gamehash;
+        console.log(this.#gamehash)        
     }
 
 
     alterPlayerList()
     {
         var list = this.getPlayerList();
-        console.log(list)
-        this.io.to(this.gameHash).emit({playerList : list })
-        console.log("emitted")
+        this.broadcastCallback(this.#gamehash,{playerList : list})
     }
 }
