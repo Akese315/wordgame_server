@@ -2,29 +2,32 @@
 
 export default class Game
 {
-    gameOwner
+    #gameOwner
     #gamehash;
     playerNumber = 0
     #playerList;
-    canJoin = false;
+    #hasStarted = false;
+    #canJoin = false;
     broadcastCallback
+    #deconnectedPlayer
 
     constructor(broadcastCallback)
     {
         this.#playerList = new Array();
+        this.#deconnectedPlayer = new Array();
         this.broadcastCallback = broadcastCallback;
     }
 
     setOwner(player)
     {
-        this.gameOwner = player;
-        this.#playerList.push(this.gameOwner)
-        this.canJoin = true;
+        this.#gameOwner = player;
+        this.#playerList.push(this.#gameOwner)
+        this.#canJoin = true;
     }
 
     isJoinable()
     {
-        if(this.canJoin)
+        if(this.#canJoin)
         {
             return true;
         }
@@ -35,7 +38,40 @@ export default class Game
     {
         this.#playerList.push(player);
         this.alterPlayerList();
-        return this.getPlayerList();
+    }
+
+    start(userHash)
+    {
+        if(userHash == this.#gameOwner.getUserHash())
+        {
+            this.#hasStarted = true;
+            this.#canJoin = false;
+            let response = new GameResponse();
+            response.hasStart = this.#hasStarted;
+            this.broadcastCallback(this.#gamehash,response);
+        }
+    }
+
+    canReconnect(userHash)
+    {
+        let index =  this.#deconnectedPlayer.indexOf(userHash)
+        if(index!= -1)
+        {
+            return false;
+        }
+        this.#deconnectedPlayer.splice(index,1);
+        return true;
+    }
+
+    leave(userHash)
+    {
+        if(this.#hasStarted)
+        {
+            this.#deconnectedPlayer.push(userHash);
+        }
+        let index = this.getIndexByHash(userHash, this.#playerList)
+        this.#playerList.splice(index,1)
+        this.alterPlayerList();
     }
 
     getGameHash()
@@ -43,12 +79,34 @@ export default class Game
         return this.#gamehash;
     }
 
+    choseNewOwner()
+    {
+        this.setOwner(this.#playerList[0]);
+    }
+
+    getOwnerHash()
+    {
+        return this.#gameOwner.getUserHash();
+    }
+
+    getIndexByHash(hash,list)
+    {
+        for(var i = 0; i<list.length; i++ )
+        {
+            if(hash == list[i].getUserHash())
+            {
+                return i;
+            }
+        }
+        return null;
+    }
+
     getPlayerList()
     {
         var playerListFormatted = [];
         for(var i =0; i<this.#playerList.length; i++)
         {
-            playerListFormatted.push({pseudo : this.#playerList[i].Cname, point : this.#playerList[i].point})
+            playerListFormatted.push({pseudo : this.#playerList[i].getPseudo(), point : this.#playerList[i].getPoint()})
         }
         return playerListFormatted;
     }
@@ -63,6 +121,14 @@ export default class Game
     alterPlayerList()
     {
         var list = this.getPlayerList();
-        this.broadcastCallback(this.#gamehash,{playerList : list})
+        let response = new GameResponse()
+        response.playerList = list;
+        this.broadcastCallback(this.#gamehash,response)
     }
+}
+
+class GameResponse
+{
+    hasStart;
+    playerList;
 }

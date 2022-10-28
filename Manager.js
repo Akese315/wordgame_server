@@ -1,7 +1,7 @@
 import {getValidToken} from './scripts/utils.js'
 export class GameManager
 {
-    gamesNumber = 0
+    #gamesNumber = 0
     #gameList
     io
 
@@ -11,18 +11,29 @@ export class GameManager
         this.#gameList = new Map();
     }
 
+    getGamesNumber()
+    {
+        return this.#gamesNumber;
+    }
+
     addGame(Player, game)
     {
         game.setOwner(Player);
         game.setGameHash(getValidToken(this.#gameList))
         this.#gameList.set(game.getGameHash(), game)
-        this.gamesNumber +=1;
+        this.#gamesNumber +=1;
         return game;
+    }
+
+    lobbyTogame(lobby)
+    {
+        
     }
 
     removeGame(gameHash)
     {
         this.#gameList.delete(gameHash);
+        this.#gamesNumber -=1;
     }
 
     findGame(gameHash)
@@ -54,9 +65,9 @@ constructor()
 
 addPlayer(player)
 {   
-    player.setPlayerHash(getValidToken(this.#playerList))
-    this.#playerList.set(player.getPlayerHash(), player)
-    return player;
+    let userHash = getValidToken(this.#playerList);
+    player.setUserHash(userHash)
+    this.#playerList.set(userHash,player)
 }
 
 getPlayer(key)
@@ -67,6 +78,11 @@ getPlayer(key)
 removePlayer(key)
 {
     this.#playerList.delete(key)
+}
+
+getPlayerBySocket()
+{
+
 }
 
 }
