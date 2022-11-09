@@ -1,5 +1,6 @@
 import Client from './client.js'
 import Game from "./game.js";
+
 export class Player extends Client
 {
     #pseudo;
@@ -31,12 +32,12 @@ export class Player extends Client
     startGame(data)
     {
         if(this.#IsGameOwner)
-        {
-            this.#CurrentGame.start(this.getUserHash());
+        {   
+            this.#CurrentGame.start(this.getUserHash(),data.gameMod);
         }else
         {
             this.sendError("You are not allowed to start a game")
-        }      
+        }
     }
 
     disconnect()

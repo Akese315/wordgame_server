@@ -1,4 +1,5 @@
 import {getValidToken} from './scripts/utils.js'
+
 export class GameManager
 {
     #gamesNumber = 0
@@ -23,11 +24,6 @@ export class GameManager
         this.#gameList.set(game.getGameHash(), game)
         this.#gamesNumber +=1;
         return game;
-    }
-
-    lobbyTogame(lobby)
-    {
-        
     }
 
     removeGame(gameHash)

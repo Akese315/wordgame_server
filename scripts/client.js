@@ -84,20 +84,6 @@ export default class Client
         })
     }
 
-    #setStartEvent()
-    {
-        this.#userSocket.on("ready",(data)=>
-        {
-            if(this.checkHash(data.userHash))
-            {
-                this.#readyCallback(data);
-            }
-            else
-            {
-                this.sendError("Non valid userHash")
-            }
-        })
-    }
 
     #setDisconnectEvent()
     {

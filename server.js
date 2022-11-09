@@ -1,5 +1,5 @@
 import { Player } from "./scripts/player.js";
-import Database from "./database.js";
+import {createPoolConnection, getPoolConnection, releaseConnection} from "./database.js";
 import { Server } from "socket.io";
 import { GameManager, ClientManager } from "./Manager.js";
 import {Response, isValidHash} from "./scripts/utils.js"
@@ -16,7 +16,6 @@ console.log("Launched")
 
 var gameManager = new GameManager(io)
 var clientManager = new ClientManager();
-var database = new Database();  
 
 async function broadcast(eventName,data)
 {
@@ -46,7 +45,7 @@ async function createUser(socket)
     socket.emit("handshakeResponse",response);
 }
 
-database.createConnection(()=>
+createPoolConnection(()=>
 {
     io.on("connection",(socket)=>
     {

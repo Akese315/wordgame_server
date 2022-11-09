@@ -1,4 +1,4 @@
-
+import { GameMod1,GameMod2,GameMod3 } from './gameMod.js';
 
 export default class Game
 {
@@ -8,6 +8,7 @@ export default class Game
     #playerList;
     #hasStarted = false;
     #canJoin = false;
+    #gameMod;
     broadcastCallback
     #deconnectedPlayer
 
@@ -40,15 +41,29 @@ export default class Game
         this.alterPlayerList();
     }
 
-    start(userHash)
+    start(userHash,gameMod)
     {
         if(userHash == this.#gameOwner.getUserHash())
         {
             this.#hasStarted = true;
             this.#canJoin = false;
+            this.#gameMod = setGameMod(gameMod);
             let response = new GameResponse();
             response.hasStart = this.#hasStarted;
             this.broadcastCallback(this.#gamehash,response);
+        }
+    }
+
+    setGameMod(gameMod)
+    {
+        switch(gameMod)
+        {
+            case "gameMod1":
+                return new GameMod1();
+            case "gameMod1":
+                return new GameMod2();
+            case "gameMod1":
+                return new GameMod3();
         }
     }
 
