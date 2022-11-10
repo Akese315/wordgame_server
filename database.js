@@ -76,9 +76,10 @@ async function createKanji(connection)
     return await connection.query(KANJI_TABLE_EXISTS);
 }
 
-export async function getRandomKanjis(connection, limit, jlpt)
+export async function getRandomKanjis(connection, limit, jlpt, callback)
 {
-    return await connection.query(SELECT_THREE_RANDOM_KANJIS,[jlpt,limit])
+    var [rows] = await connection.query(SELECT_THREE_RANDOM_KANJIS,[jlpt,limit])
+    callback(rows);
 }
 
 async function isKanjiTableEmpty(connection)

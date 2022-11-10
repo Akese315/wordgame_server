@@ -5,8 +5,9 @@ export class Player extends Client
 {
     #pseudo;
     #point;
+    #currentRound
     #CurrentGame;
-    #isReady;
+    #isAlreadyReady;
     #IsGameOwner;
     gameManager;
 
@@ -15,13 +16,13 @@ export class Player extends Client
         super(socket, broadcast);
         this.gameManager = gameManager;
         this.#point = 0;
-
         this.setPseudoCallback(this.setPseudo);
         this.setDisconnectCallback(this.disconnect);
         this.setJoinCallback(this.join);
         this.setStartCallback(this.launchGame)
         this.setCreateCallback(this.creategame)
         this.setReadyCallback(this.setReady)
+        this.setAnswerCallback(this.sendAnswer)
     }
 
     setClientPseudo(pseudo)
@@ -31,10 +32,9 @@ export class Player extends Client
 
     launchGame(data)
     {
-        console.log(data)
         if(this.#IsGameOwner)
         {   
-            this.#CurrentGame.launch(this.getUserHash(),data.gameMod);
+            this.#CurrentGame.launch(this.getUserHash(),data.gameMod,data.round);
         }else
         {
             this.sendError("You are not allowed to start a game")
@@ -77,10 +77,22 @@ export class Player extends Client
         }
     }
 
-    setReady()
+    setReady(isReady)
     {
-        this.#isReady = true;
-        this.#CurrentGame.start(this)
+        if(typeof(this.#CurrentGame) != "undefined")
+        {
+            this.#CurrentGame.setPlayerReady(this.#isAlreadyReady)
+            this.#isAlreadyReady = true;
+            this.#currentRound = 0;
+        }        
+    }
+
+    sendAnswer(answer)
+    {
+        this.#CurrentGame.checkAnswer(answer,this);
+        this.#currentRound += 1;
+        let response = this.#CurrentGame.nextRound(this.#currentRound)
+        this.sendResponse("answer", response);
     }
 
     join(data)
@@ -102,7 +114,7 @@ export class Player extends Client
             let response = {playerList : playerlist};
             this.sendResponse("join", response)                                  
         }
-        console.log("duration createGame : " +(Date.now()-timeStart))  
+        //console.log("duration createGame : " +(Date.now()-timeStart))  
     }
 
     creategame()
@@ -114,7 +126,7 @@ export class Player extends Client
             let playerList = this.#CurrentGame.getPlayerList();
             let gameHash = this.#CurrentGame.getGameHash();
             let response = {message:"You already own a game",gameHash: gameHash, playerList : playerList}
-            console.log("duration createGame : " +(Date.now()-timeStart))
+            //console.log("duration createGame : " +(Date.now()-timeStart))
             this.sendResponse("create", response);
             return;
         }
@@ -125,7 +137,7 @@ export class Player extends Client
         let playerList = this.#CurrentGame.getPlayerList();
         let gameHash = this.#CurrentGame.getGameHash();
         let response = {message:"Game created",gameHash: gameHash, playerList : playerList}
-        console.log("duration createGame : " +(Date.now()-timeStart))
+        //console.log("duration createGame : " +(Date.now()-timeStart))
         this.sendResponse("create", response);
     }
 
@@ -143,8 +155,18 @@ export class Player extends Client
         this.setClientPseudo(tempPseudo);
 
         let response = {message : "pseudo has been set", pseudo: this.#pseudo}
-        console.log("duration setPseudo : " +(Date.now()-timeStart))
+        //console.log("duration setPseudo : " +(Date.now()-timeStart))
         this.sendResponse("setPseudo",response)
+    }
+
+    increasePoint(newPoint)
+    {
+        this.#point += newPoint;
+    }
+    
+    getCurrentRound()
+    {
+        return this.#currentRound;
     }
 
     getPseudo()
@@ -155,5 +177,10 @@ export class Player extends Client
     getPoint()
     {
         return this.#point;
+    }
+
+    getCurrentRound()
+    {
+        return this.#currentRound;
     }
 }

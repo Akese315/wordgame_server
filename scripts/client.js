@@ -12,8 +12,7 @@ export default class Client
     #startCallback
     #disconnectCallback
     #readyCallback
-    
-    
+    #answerCallback
 
     constructor(socket, broadcast)
     {   
@@ -24,7 +23,10 @@ export default class Client
         this.#setCreateEvent()
         this.#setPseudoEvent()
         this.#setStartEvent()
+        this.#setReadyEvent()
+        this.#setAnswerEvent()
         this.#setDisconnectEvent()
+       
         this.#connected();
     }
 
@@ -56,6 +58,29 @@ export default class Client
             } 
         });
     }
+
+    #setAnswerEvent()
+    {
+        this.#userSocket.on("answer",(data)=>
+        {            
+            if(typeof(data.answer) != "undefined" || data.answer != "")
+            {
+                this.#answerCallback(data.answer); 
+            }else
+            {
+                this.sendError("Non valid answer")
+            }                       
+        })
+    }
+
+    #setReadyEvent()
+    {
+        this.#userSocket.on("ready",(data)=>
+        {            
+            this.#readyCallback(data.isReady);            
+        })
+    }
+
     #setPseudoEvent()
     {
         this.#userSocket.on("setPseudo", (data)=>
@@ -101,6 +126,11 @@ export default class Client
     setPseudoCallback(callback)
     {
         this.#pseudoCallback = callback;
+    } 
+
+    setAnswerCallback(callback)
+    {
+        this.#answerCallback = callback;
     } 
     
     setCreateCallback(callback)

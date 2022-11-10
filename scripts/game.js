@@ -5,8 +5,8 @@ export default class Game
     #gameOwner
     #gamehash;
     playerNumber = 0
-    playerReady = 0
-    rounds = 1;
+    NumberPlayerReady = 0
+    #rounds = 1;
     #playerList;
     #hasStarted = false;
     #hasLaunched = false;
@@ -26,6 +26,7 @@ export default class Game
     {
         this.#gameOwner = player;
         this.#playerList.push(this.#gameOwner)
+        this.playerNumber += 1
         this.#canJoin = true;
     }
 
@@ -41,56 +42,89 @@ export default class Game
     join(player)
     {
         this.#playerList.push(player);
+        this.playerNumber += 1
         this.alterPlayerList();
     }
 
-    launch(userHash,gameMod)
+    launch(userHash,gameMod, round)
     {
+
         if(userHash == this.#gameOwner.getUserHash())
         {
+            this.#rounds = round;
             this.#hasLaunched = true;
             this.#canJoin = false;
             this.#gameMod = this.setGameMod(gameMod);
             this.#gameMod.createCardsSet(()=>
             {
-                console.log(this.#gameMod.getThreeCard(1))
                 let response = new GameResponse();
                 response.hasLaunched = this.#hasLaunched;
-                this.broadcastCallback(this.#gamehash,response);
-            },this.rounds);
+                //this.broadcastCallback(this.#gamehash,response);
+            },this.#rounds);
         }
     }
 
     start()
     {
         this.#hasStarted = true;
-        var firstCardSet = this.#gameMod.getThreeCard(1);
+        var firstCardSet = this.#gameMod.getThreeCard(0);
+        var assignment = this.#gameMod.getAssignment(0);
         let response = new GameResponse();
         response.hasStarted = this.#hasStarted;
-        response.cards = firstCardSet;
+        response.round.assignment = assignment
+        response.round.cards = firstCardSet;
         this.broadcastCallback(this.#gamehash,response);
     }
 
-    setPlayerReady()
+    setPlayerReady(isAlreadyReady)
     {
-        this.playerReady +=1;
-        if(this.playerReady == this.playerNumber)
+        if(!isAlreadyReady)
         {
-            this.start()
+            this.NumberPlayerReady +=1;
+            if(this.NumberPlayerReady == this.playerNumber)
+            {
+                this.start()
+            }
+        }        
+    }
+
+    checkAnswer(answer, player)
+    {
+        if(this.#gameMod.checkAnswer(answer, player.getCurrentRound()))
+        {
+            player.increasePoint(100);
+            let playerlist = this.getPlayerList()
+            this.broadcastCallback(this.#gamehash, {playerList : playerlist})
         }
+    }
+
+    nextRound(round)
+    {
+        var cardSet = this.#gameMod.getThreeCard(round);
+        var assignment = this.#gameMod.getAssignment(round);
+        let response = new GameResponse();
+        response.hasStarted = this.#hasStarted;
+        response.round.assignment = assignment
+        response.round.cards = cardSet;
+        return response;
     }
 
     setGameMod(gameMod)
     {
+        var gameModObject;
         switch(gameMod)
         {
             case "gameMod1":
-                return new GameMod1();
+                gameModObject = new GameMod1();
+                break;
             case "gameMod1":
-                return new GameMod2();
+                gameModObject = new GameMod2();
+                break;
             case "gameMod1":
-                return new GameMod3();
+                gameModObject = new GameMod3();
+                break;
         }
+        return gameModObject
     }
 
     canReconnect(userHash)
@@ -172,6 +206,7 @@ class GameResponse
 {
     hasLaunched;
     playerList;
-    cards;
+    round = {cards : [],assignment :""}
     hasStarted;
+    
 }
