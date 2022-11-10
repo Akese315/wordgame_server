@@ -1,9 +1,9 @@
-import mysql from 'mysql2'
+import mysql from 'mysql2/promise'
 import dotenv from 'dotenv'
 import kanji_jouyou from './kanji/kanji-data/kanji-jouyou.json'assert { type: 'json' };
 
 dotenv.config();  
-export var MysqlPoolObject
+var MysqlPoolObject
 var INSERT_USER_STATEMENT =`INSERT INTO users (userHash,userName) VALUES(?,?)`;
 var INSERT_GAME_STATEMENT =`INSERT INTO games (gameHash,ownerHash) VALUES(?,?)`;
 var INNER_JOIN_GAME_USER = "SELECT * FROM GAME INNER JOIN B ON A.key = B.key"
@@ -13,9 +13,10 @@ var USER_EXISTS = "SELECT * FROM users WHERE userHash =?"
 var IS_USER_OWNER = "SELECT gameHash FROM games WHERE ownerHash=?"    
 var KANJI_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS kanjis (id integer PRIMARY KEY AUTO_INCREMENT, kanji VARCHAR(1) CHARACTER SET utf8 COLLATE utf8_general_ci ,reading_on VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci ,reading_kun VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci ,meaning VARCHAR(255),jlpt integer);"
 var IS_KANJI_TABLE_EMPTY = "SELECT * FROM kanjis LIMIT 1"
+var SELECT_THREE_RANDOM_KANJIS = "SELECT meaning, kanji FROM kanjis WHERE jlpt=? ORDER BY RAND() LIMIT ?"
 var INSERT_KANJIS = `INSERT INTO kanjis (kanji,reading_on,reading_kun,meaning,jlpt) VALUES(?,?,?,?,?)`
 
-async function addUser(name,hash)
+async function addUser(name,hash, connection)
 {
     var result = isExists(hash)
     if(result != false)
@@ -27,7 +28,7 @@ async function addUser(name,hash)
     return row;
 }
 
-async function isExists(userHash)
+async function isExists(userHash, connection)
 {
     var [result] =  await connection.query(USER_EXISTS,[userHash]);        
     if(result.length == 0)
@@ -75,7 +76,12 @@ async function createKanji(connection)
     return await connection.query(KANJI_TABLE_EXISTS);
 }
 
-async function isKanjiTableEmpty()
+export async function getRandomKanjis(connection, limit, jlpt)
+{
+    return await connection.query(SELECT_THREE_RANDOM_KANJIS,[jlpt,limit])
+}
+
+async function isKanjiTableEmpty(connection)
 {
     
     var [rows] = await connection.query(IS_KANJI_TABLE_EMPTY);
@@ -85,7 +91,7 @@ async function isKanjiTableEmpty()
     }        
 }
 
-async function insertAllKanjis()
+async function insertAllKanjis(connection)
 {
     var keys = Object.keys(kanji_jouyou)
     for(var i =0; i < keys.length; i++)
@@ -137,14 +143,18 @@ export function releaseConnection(connection)
 
 export function getPoolConnection(callback)
 {
-    MysqlPoolObject.getConnection((connection)=>{
+    MysqlPoolObject.getConnection().then((connection)=>
+    {
         callback(connection)
+    }).catch((error)=>
+    {
+        console.error(error)
     })
 }
 
 export async function createPoolConnection(callback)
 {   
-    MysqlPoolObject = await mysql.createPool(
+    MysqlPoolObject = mysql.createPool(
         {
                 connectionLimit : 100,
                 host: process.env.MYSQL_HOST,
@@ -152,14 +162,14 @@ export async function createPoolConnection(callback)
                 password: process.env.MYSQL_PASSWORD,
                 database: process.env.MYSQL_DATABASE
         }
-    )    
+    )
 
     console.log("database connected")
     getPoolConnection((connection)=>
     {
         createKanji(connection)
         isKanjiTableEmpty(connection);
-        connection.release();
+        releaseConnection(connection)
         callback(this);
     });
     

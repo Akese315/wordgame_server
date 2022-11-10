@@ -5,8 +5,11 @@ export default class Game
     #gameOwner
     #gamehash;
     playerNumber = 0
+    playerReady = 0
+    rounds = 1;
     #playerList;
     #hasStarted = false;
+    #hasLaunched = false;
     #canJoin = false;
     #gameMod;
     broadcastCallback
@@ -41,16 +44,39 @@ export default class Game
         this.alterPlayerList();
     }
 
-    start(userHash,gameMod)
+    launch(userHash,gameMod)
     {
         if(userHash == this.#gameOwner.getUserHash())
         {
-            this.#hasStarted = true;
+            this.#hasLaunched = true;
             this.#canJoin = false;
-            this.#gameMod = setGameMod(gameMod);
-            let response = new GameResponse();
-            response.hasStart = this.#hasStarted;
-            this.broadcastCallback(this.#gamehash,response);
+            this.#gameMod = this.setGameMod(gameMod);
+            this.#gameMod.createCardsSet(()=>
+            {
+                console.log(this.#gameMod.getThreeCard(1))
+                let response = new GameResponse();
+                response.hasLaunched = this.#hasLaunched;
+                this.broadcastCallback(this.#gamehash,response);
+            },this.rounds);
+        }
+    }
+
+    start()
+    {
+        this.#hasStarted = true;
+        var firstCardSet = this.#gameMod.getThreeCard(1);
+        let response = new GameResponse();
+        response.hasStarted = this.#hasStarted;
+        response.cards = firstCardSet;
+        this.broadcastCallback(this.#gamehash,response);
+    }
+
+    setPlayerReady()
+    {
+        this.playerReady +=1;
+        if(this.playerReady == this.playerNumber)
+        {
+            this.start()
         }
     }
 
@@ -80,7 +106,7 @@ export default class Game
 
     leave(userHash)
     {
-        if(this.#hasStarted)
+        if(this.#hasLaunched)
         {
             this.#deconnectedPlayer.push(userHash);
         }
@@ -129,7 +155,7 @@ export default class Game
     setGameHash(gamehash)
     {
         this.#gamehash = gamehash;
-        console.log(this.#gamehash)        
+        //console.log(this.#gamehash)        
     }
 
 
@@ -144,6 +170,8 @@ export default class Game
 
 class GameResponse
 {
-    hasStart;
+    hasLaunched;
     playerList;
+    cards;
+    hasStarted;
 }

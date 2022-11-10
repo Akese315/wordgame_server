@@ -1,5 +1,5 @@
 import { Player } from "./scripts/player.js";
-import {createPoolConnection, getPoolConnection, releaseConnection} from "./database.js";
+import {createPoolConnection} from "./database.js";
 import { Server } from "socket.io";
 import { GameManager, ClientManager } from "./Manager.js";
 import {Response, isValidHash} from "./scripts/utils.js"

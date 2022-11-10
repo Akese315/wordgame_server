@@ -19,7 +19,7 @@ export class Player extends Client
         this.setPseudoCallback(this.setPseudo);
         this.setDisconnectCallback(this.disconnect);
         this.setJoinCallback(this.join);
-        this.setStartCallback(this.startGame)
+        this.setStartCallback(this.launchGame)
         this.setCreateCallback(this.creategame)
         this.setReadyCallback(this.setReady)
     }
@@ -29,11 +29,12 @@ export class Player extends Client
         this.#pseudo = pseudo;
     }
 
-    startGame(data)
+    launchGame(data)
     {
+        console.log(data)
         if(this.#IsGameOwner)
         {   
-            this.#CurrentGame.start(this.getUserHash(),data.gameMod);
+            this.#CurrentGame.launch(this.getUserHash(),data.gameMod);
         }else
         {
             this.sendError("You are not allowed to start a game")

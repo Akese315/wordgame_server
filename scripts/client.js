@@ -163,7 +163,7 @@ export default class Client
         {
             return false
         }
-        console.log(this.#userHash);
+        //console.log(this.#userHash);
         if(userHash != this.#userHash)
         {
             return false;
