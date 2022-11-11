@@ -10,16 +10,25 @@ export default class Game
     #playerList;
     #hasStarted = false;
     #hasLaunched = false;
+    #hasEnded = false;
     #canJoin = false;
     #gameMod;
-    broadcastCallback
     #deconnectedPlayer
+    #rankingList
 
-    constructor(broadcastCallback)
+    constructor()
     {
         this.#playerList = new Array();
         this.#deconnectedPlayer = new Array();
-        this.broadcastCallback = broadcastCallback;
+        this.#rankingList = new Array();
+    }
+
+    broadCast(event, response)
+    {
+        for(let i = 0; i<this.#playerList.length; i++)
+        {
+            this.#playerList[i].sendResponse(event,response)
+        }
     }
 
     setOwner(player)
@@ -59,7 +68,8 @@ export default class Game
             {
                 let response = new GameResponse();
                 response.hasLaunched = this.#hasLaunched;
-                //this.broadcastCallback(this.#gamehash,response);
+                response.gameMod = gameMod;
+                this.broadCast("launch",response);
             },this.#rounds);
         }
     }
@@ -70,10 +80,9 @@ export default class Game
         var firstCardSet = this.#gameMod.getThreeCard(0);
         var assignment = this.#gameMod.getAssignment(0);
         let response = new GameResponse();
-        response.hasStarted = this.#hasStarted;
-        response.round.assignment = assignment
-        response.round.cards = firstCardSet;
-        this.broadcastCallback(this.#gamehash,response);
+        response.hasStarted = this.#hasStarted;        
+        response.round = {cards : firstCardSet ,assignment :assignment}
+        this.broadCast("round",response);
     }
 
     setPlayerReady(isAlreadyReady)
@@ -94,7 +103,7 @@ export default class Game
         {
             player.increasePoint(100);
             let playerlist = this.getPlayerList()
-            this.broadcastCallback(this.#gamehash, {playerList : playerlist})
+            this.broadCast("playerList", {playerList : playerlist})
         }
     }
 
@@ -103,10 +112,30 @@ export default class Game
         var cardSet = this.#gameMod.getThreeCard(round);
         var assignment = this.#gameMod.getAssignment(round);
         let response = new GameResponse();
-        response.hasStarted = this.#hasStarted;
-        response.round.assignment = assignment
-        response.round.cards = cardSet;
+        response.round = {cards : cardSet ,assignment :assignment}
         return response;
+    }
+
+    finishGame(name)
+    {
+        this.#rankingList.push(name);
+        if(this.#rankingList.length == this.#playerList.length)
+        {
+            //quand tout les joueurs ont fini
+            this.#hasEnded = true;
+            let response = new GameResponse();
+            response.rankingList = this.#rankingList;
+            response.hasEnded = this.#hasEnded;
+            this.broadCast("endGame",response)
+        }else
+        {
+            //quand il reste encore des joueur
+            let response = new GameResponse();
+            response.playerList = this.getPlayerList();
+            response.hasEnded = this.#hasEnded;  
+            this.broadCast("playerList", response)          
+        }
+        
     }
 
     setGameMod(gameMod)
@@ -176,20 +205,28 @@ export default class Game
         return null;
     }
 
+    getTotalRound()
+    {
+        return this.#rounds;
+    }
+
     getPlayerList()
     {
         var playerListFormatted = [];
         for(var i =0; i<this.#playerList.length; i++)
         {
-            playerListFormatted.push({pseudo : this.#playerList[i].getPseudo(), point : this.#playerList[i].getPoint()})
+            playerListFormatted.push({
+                pseudo : this.#playerList[i].getPseudo(), 
+                point : this.#playerList[i].getPoint(),
+                hasFinished : this.#playerList[i].hasFinished()
+            })
         }
         return playerListFormatted;
     }
 
     setGameHash(gamehash)
     {
-        this.#gamehash = gamehash;
-        //console.log(this.#gamehash)        
+        this.#gamehash = gamehash;     
     }
 
 
@@ -198,7 +235,7 @@ export default class Game
         var list = this.getPlayerList();
         let response = new GameResponse()
         response.playerList = list;
-        this.broadcastCallback(this.#gamehash,response)
+        this.broadCast("playerList",response)
     }
 }
 
@@ -206,7 +243,9 @@ class GameResponse
 {
     hasLaunched;
     playerList;
-    round = {cards : [],assignment :""}
+    round;
     hasStarted;
-    
+    hasEnded;
+    gameMod;
+    rankingList;
 }

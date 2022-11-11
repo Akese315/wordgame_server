@@ -47,7 +47,11 @@ export class GameMod1
     }
 
     checkAnswer(answer, round)
-    {
+    {   
+        if(round >= this.rounds)
+        {
+            return false;
+        }
         if(answer == this.cards[this.rightAnswers[round]].kanji)
         {
             return true;

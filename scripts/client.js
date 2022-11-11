@@ -9,7 +9,7 @@ export default class Client
     #pseudoCallback
     #createCallback
     #joinCallback
-    #startCallback
+    #launchCallback
     #disconnectCallback
     #readyCallback
     #answerCallback
@@ -22,7 +22,7 @@ export default class Client
         this.#setJoinEvent()
         this.#setCreateEvent()
         this.#setPseudoEvent()
-        this.#setStartEvent()
+        this.#setLaunchEvent()
         this.#setReadyEvent()
         this.#setAnswerEvent()
         this.#setDisconnectEvent()
@@ -95,13 +95,13 @@ export default class Client
         });
     }
 
-    #setStartEvent()
+    #setLaunchEvent()
     {
-        this.#userSocket.on("start",(data)=>
+        this.#userSocket.on("launch",(data)=>
         {
             if(this.checkHash(data.userHash))
             {
-                this.#startCallback(data);
+                this.#launchCallback(data);
             }else
             {
                  this.sendError("Non valid userHash")
@@ -147,9 +147,9 @@ export default class Client
     {
         this.#joinCallback = callback;
     }
-    setStartCallback(callback)
+    setLaunchCallback(callback)
     {
-        this.#startCallback = callback;
+        this.#launchCallback = callback;
     }
 
     #connected()

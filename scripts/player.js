@@ -8,18 +8,20 @@ export class Player extends Client
     #currentRound
     #CurrentGame;
     #isAlreadyReady;
+    #finished;
     #IsGameOwner;
     gameManager;
 
-    constructor(socket, broadcast,gameManager)
+    constructor(socket,gameManager)
     {
-        super(socket, broadcast);
+        super(socket);
         this.gameManager = gameManager;
         this.#point = 0;
+        this.#finished = false
         this.setPseudoCallback(this.setPseudo);
         this.setDisconnectCallback(this.disconnect);
         this.setJoinCallback(this.join);
-        this.setStartCallback(this.launchGame)
+        this.setLaunchCallback(this.launchGame)
         this.setCreateCallback(this.creategame)
         this.setReadyCallback(this.setReady)
         this.setAnswerCallback(this.sendAnswer)
@@ -88,11 +90,23 @@ export class Player extends Client
     }
 
     sendAnswer(answer)
-    {
+    {   
+        if(this.#finished)
+        {
+            this.sendError("the game is finished for you");
+            return;
+        }
         this.#CurrentGame.checkAnswer(answer,this);
         this.#currentRound += 1;
-        let response = this.#CurrentGame.nextRound(this.#currentRound)
-        this.sendResponse("answer", response);
+        if(this.#CurrentGame.getTotalRound() <= this.#currentRound)
+        {
+            this.#finished = true
+            this.#CurrentGame.finishGame(this.getPseudo());            
+        }else
+        {
+            let response = this.#CurrentGame.nextRound(this.#currentRound)
+            this.sendResponse("round", response);
+        }      
     }
 
     join(data)
@@ -132,7 +146,7 @@ export class Player extends Client
         }
 
         this.#IsGameOwner = true;
-        let game = new Game(this.broadcast)
+        let game = new Game()
         this.#CurrentGame = this.gameManager.addGame(this, game)
         let playerList = this.#CurrentGame.getPlayerList();
         let gameHash = this.#CurrentGame.getGameHash();
@@ -157,6 +171,11 @@ export class Player extends Client
         let response = {message : "pseudo has been set", pseudo: this.#pseudo}
         //console.log("duration setPseudo : " +(Date.now()-timeStart))
         this.sendResponse("setPseudo",response)
+    }
+
+    hasFinished()
+    {
+        return this.#finished;
     }
 
     increasePoint(newPoint)

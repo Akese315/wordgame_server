@@ -35,7 +35,7 @@ async function createUser(socket)
     }    
     if(client == null)
     {   
-        let player = new Player(socket, broadcast,gameManager)
+        let player = new Player(socket,gameManager)
         clientManager.addPlayer(player);
         let userHash = player.getUserHash()
         response = {userHash : userHash, message : "Player created"}
