@@ -100,8 +100,10 @@ export class Player extends Client
         this.#currentRound += 1;
         if(this.#CurrentGame.getTotalRound() <= this.#currentRound)
         {
-            this.#finished = true
-            this.#CurrentGame.finishGame(this.getPseudo());            
+            this.#finished = true;
+            this.#CurrentGame.finishGame(this.getPseudo()); 
+            this.sendResponse("endGame",{playerFinished : this.#finished});                 
+                 
         }else
         {
             let response = this.#CurrentGame.nextRound(this.#currentRound)

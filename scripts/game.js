@@ -119,23 +119,25 @@ export default class Game
     finishGame(name)
     {
         this.#rankingList.push(name);
+
+        //envoie des update sur les player
+        let response = new GameResponse();
+        response.playerList = this.getPlayerList();
+        response.hasEnded = this.#hasEnded;     
+        this.broadCast("playerList", response)      
+        // ça je touche pas //
+
+
         if(this.#rankingList.length == this.#playerList.length)
         {
             //quand tout les joueurs ont fini
             this.#hasEnded = true;
             let response = new GameResponse();
             response.rankingList = this.#rankingList;
-            response.hasEnded = this.#hasEnded;
-            this.broadCast("endGame",response)
-        }else
-        {
-            //quand il reste encore des joueur
-            let response = new GameResponse();
-            response.playerList = this.getPlayerList();
-            response.hasEnded = this.#hasEnded;  
-            this.broadCast("playerList", response)          
+            //envoie à tout les joueurs le ranklist
+            this.broadCast("rankingList",response)
         }
-        
+               
     }
 
     setGameMod(gameMod)
