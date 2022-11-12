@@ -8,14 +8,18 @@ export class GameMod1
     rightAnswers = []
     rounds = 1;
     
-    
-    createCardsSet(callback, rounds)
+    constructor(jlpt, rounds)
     {
         this.rounds = rounds;
+        this.jlptLevel = jlpt;
+    }
+    
+    createCardsSet(callback)
+    {
         getPoolConnection((connection)=>
         {
             var cardNumber = this.cardNumberByRound*this.rounds
-            getRandomKanjis(connection, cardNumber, 5,(rows)=>
+            getRandomKanjis(connection, cardNumber, this.jlptLevel,(rows)=>
             {
                 this.generateAnswers()
                 this.cards = rows;

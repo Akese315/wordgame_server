@@ -99,7 +99,11 @@ export default class Client
     {
         this.#userSocket.on("launch",(data)=>
         {
-            if(this.checkHash(data.userHash))
+            if(
+            this.checkHash(data.userHash) && 
+            typeof(data.jlpt) !="undefined" &&
+            typeof(data.gameMod) != "undefined"&&
+            typeof(data.round) !="undefined")
             {
                 this.#launchCallback(data);
             }else

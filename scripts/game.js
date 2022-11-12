@@ -55,22 +55,22 @@ export default class Game
         this.alterPlayerList();
     }
 
-    launch(userHash,gameMod, round)
+    launch(userHash,gameMod,rounds,jlpt)
     {
 
         if(userHash == this.#gameOwner.getUserHash())
         {
-            this.#rounds = round;
+            this.#rounds = rounds;
             this.#hasLaunched = true;
             this.#canJoin = false;
-            this.#gameMod = this.setGameMod(gameMod);
+            this.#gameMod = this.setGameMod(gameMod,jlpt,rounds);
             this.#gameMod.createCardsSet(()=>
             {
                 let response = new GameResponse();
                 response.hasLaunched = this.#hasLaunched;
                 response.gameMod = gameMod;
                 this.broadCast("launch",response);
-            },this.#rounds);
+            });
         }
     }
 
@@ -140,19 +140,19 @@ export default class Game
                
     }
 
-    setGameMod(gameMod)
+    setGameMod(gameMod, rounds, jlpt)
     {
         var gameModObject;
         switch(gameMod)
         {
             case "gameMod1":
-                gameModObject = new GameMod1();
+                gameModObject = new GameMod1(rounds,jlpt);
                 break;
             case "gameMod1":
-                gameModObject = new GameMod2();
+                gameModObject = new GameMod2(rounds,jlpt);
                 break;
             case "gameMod1":
-                gameModObject = new GameMod3();
+                gameModObject = new GameMod3(rounds,jlpt);
                 break;
         }
         return gameModObject
