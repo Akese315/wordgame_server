@@ -20,10 +20,23 @@ CREATE TABLE games (
 CREATE TABLE IF NOT EXISTS kanjis (
     id integer PRIMARY KEY AUTO_INCREMENT,
     kanji VARCHAR(1) CHARACTER SET utf8 COLLATE utf8_general_ci,
-    reading_on VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_general_ci,
-    reading_kun VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_general_ci,
     meaning VARCHAR(255),
     jlpt integer
+);
+
+CREATE TABLE IF NOT EXISTS readings_on (
+    id integer PRIMARY KEY AUTO_INCREMENT,
+    reading_on VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci,
+);
+
+CREATE TABLE IF NOT EXISTS readings_kun (
+    id integer PRIMARY KEY AUTO_INCREMENT,
+    reading_kun VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci
+);
+
+CREATE TABLE IF NOT EXISTS kanjisToReadings(
+    idKanji integer,
+    idReading integer
 );
 
 INSERT INTO games (gameHash, ownerHash) VALUES (100000, 1234);

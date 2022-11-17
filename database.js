@@ -12,9 +12,18 @@ var SELECT_ALL_GAME = "SELECT * FROM games"
 var USER_EXISTS = "SELECT * FROM users WHERE userHash =?"
 var IS_USER_OWNER = "SELECT gameHash FROM games WHERE ownerHash=?"    
 var KANJI_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS kanjis (id integer PRIMARY KEY AUTO_INCREMENT, kanji VARCHAR(1) CHARACTER SET utf8 COLLATE utf8_general_ci ,reading_on VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci ,reading_kun VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci ,meaning VARCHAR(255),jlpt integer);"
+var READING_KUN_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS readings_kun (id integer PRIMARY KEY AUTO_INCREMENT,reading_kun VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci);"
+var READING_ON_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS readings_on (id integer PRIMARY KEY AUTO_INCREMENT,reading_on VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci);"
+var JOIN_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS kanjisToReadings(idKanji integer,idReading integer);"
 var IS_KANJI_TABLE_EMPTY = "SELECT * FROM kanjis LIMIT 1"
+var IS_READINGS_KUN_TABLE_EMPTY = "SELECT * FROM readings_kun LIMIT 1"
+var IS_READINGS_ON_TABLE_EMPTY = "SELECT * FROM readings_on LIMIT 1"
 var SELECT_THREE_RANDOM_KANJIS = "SELECT meaning, kanji FROM kanjis WHERE jlpt=? ORDER BY RAND() LIMIT ?"
-var INSERT_KANJIS = `INSERT INTO kanjis (kanji,reading_on,reading_kun,meaning,jlpt) VALUES(?,?,?,?,?)`
+var IS_READING_KUN_ALREADY_SET = "SELECT reading_kun FROM readings_kun where reading_kun=? limit 1"
+var IS_READING_ON_ALREADY_SET = "SELECT reading_on FROM readings_on where reading_on=? limit 1"
+var INSERT_KANJIS = `INSERT INTO kanjis (kanji,meaning,jlpt) VALUES(?,?,?)`
+var INSERT_READING_ON = `INSERT INTO readings_on (reading_on) VALUES (?)`
+var INSERT_READING_KUN = `INSERT INTO readings_kun (reading_kun) VALUES (?)`
 
 async function addUser(name,hash, connection)
 {
@@ -76,6 +85,17 @@ async function createKanji(connection)
     return await connection.query(KANJI_TABLE_EXISTS);
 }
 
+async function createReading(connection)
+{
+    await connection.query(READING_KUN_TABLE_EXISTS);
+    await connection.query(READING_ON_TABLE_EXISTS);
+}
+
+async function createJoinTable(connection)
+{
+    return await connection.query(JOIN_TABLE_EXISTS);
+}
+
 export async function getRandomKanjis(connection, limit, jlpt, callback)
 {
     var [rows] = await connection.query(SELECT_THREE_RANDOM_KANJIS,[jlpt,limit])
@@ -88,17 +108,66 @@ async function isKanjiTableEmpty(connection)
     var [rows] = await connection.query(IS_KANJI_TABLE_EMPTY);
     if(rows.length ==0)
     {
-        insertAllKanjis()
+        insertAllKanjis(connection)
     }        
+}
+
+async function isReadingTableEmpty(connection)
+{
+    
+    var [rows] = await connection.query(IS_READINGS_KUN_TABLE_EMPTY);
+    if(rows.length ==0)
+    {
+        insertReadingsKun(connection);
+    }        
+    var [rows] = await connection.query(IS_READINGS_ON_TABLE_EMPTY);
+    if(rows.length == 0)
+    {
+        insertReadingsOn(connection);
+    }
+}
+
+async function insertReadingsKun(connection)
+{
+    var keys = Object.keys(kanji_jouyou)
+    for(let i = 0; i<keys.length; i++)
+    {
+        let length =  kanji_jouyou[keys[i]].readings_kun.length
+        for(let k = 0; k < length;k++)
+        {
+            let [rows] = await connection.query(IS_READING_KUN_ALREADY_SET, [kanji_jouyou[keys[i]].readings_kun[k]]);
+            if(rows.length == 0)
+            {
+                let reading_kun = kanji_jouyou[keys[i]].readings_kun[k]               
+                await connection.query(INSERT_READING_KUN, reading_kun);
+            }            
+        }
+    }
+}
+
+async function insertReadingsOn(connection)
+{
+    var keys = Object.keys(kanji_jouyou)
+    for(var i = 0; i<keys.length; i++)
+    {
+        let length =  kanji_jouyou[keys[i]].readings_on.length
+        for(var k = 0; k < length;k++)
+        {
+            var reading_on = kanji_jouyou[keys[i]].readings_on[k];
+            var [rows] = await connection.query(IS_READING_ON_ALREADY_SET, reading_on);
+            if(rows.length == 0)
+            {
+                await connection.query(INSERT_READING_ON, reading_on);
+            }            
+        }
+    }
 }
 
 async function insertAllKanjis(connection)
 {
     var keys = Object.keys(kanji_jouyou)
     for(var i =0; i < keys.length; i++)
-    {
-        var reading_on = "";
-        var readings_kun = "";
+    {        
         var meanings = "";
         var jlpt = kanji_jouyou[keys[i]].jlpt_new;
         for(var k = 0; k < kanji_jouyou[keys[i]].readings_on.length;k++)
@@ -168,9 +237,12 @@ export async function createPoolConnection(callback)
     console.log("database connected")
     getPoolConnection((connection)=>
     {
-        createKanji(connection)
+        createJoinTable(connection);
+        createKanji(connection);
+        createReading(connection);
         isKanjiTableEmpty(connection);
-        releaseConnection(connection)
+        isReadingTableEmpty(connection);
+        releaseConnection(connection);
         callback(this);
     });
     
