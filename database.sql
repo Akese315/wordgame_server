@@ -34,10 +34,17 @@ CREATE TABLE IF NOT EXISTS readings_kun (
     reading_kun VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci
 );
 
-CREATE TABLE IF NOT EXISTS kanjisToReadings(
+CREATE TABLE IF NOT EXISTS kanjisToReadingsKun(
     idKanji integer,
-    idReading integer
+    idReadingKun integer
 );
+
+CREATE TABLE IF NOT EXISTS kanjisToReadingsOn(
+    idKanji integer,
+    idReadingOn integer
+);
+
+DROP TABLE readings_on,readings_kun,kanjisToReadingsKun,kanjisToReadingsOn, kanjis;
 
 INSERT INTO games (gameHash, ownerHash) VALUES (100000, 1234);
 
