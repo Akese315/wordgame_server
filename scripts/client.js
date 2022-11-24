@@ -101,9 +101,12 @@ export default class Client
         {
             if(
             this.checkHash(data.userHash) && 
-            typeof(data.jlpt) !="undefined" &&
+            typeof(data.jlpt) !="undefined" && 
+            typeof(data.jlpt) =="number" &&
             typeof(data.gameMod) != "undefined"&&
-            typeof(data.round) !="undefined")
+            typeof(data.gameMod) == "string" &&
+            typeof(data.round) !="undefined"&&
+            typeof(data.round) =="number")
             {
                 this.#launchCallback(data);
             }else

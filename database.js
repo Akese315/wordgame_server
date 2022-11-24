@@ -1,5 +1,12 @@
 import mysql from 'mysql2/promise'
-import {insertReadingsToKanjis,insertReadingsKun,insertReadingsOn,insertAllKanjis,insertAllWords} from './scripts/database_tools.js'
+import {
+    insertReadingsToKanjis,
+    insertReadingsKun,
+    insertReadingsOn,
+    insertAllKanjis,
+    insertAllWords,
+    insertAllKanjiToWord
+} from './scripts/database_tools.js'
 import dotenv from 'dotenv'
 
 
@@ -26,8 +33,9 @@ var IS_KANJI_TO_READING_KUN_EMPTY = "SELECT * FROM kanjisToReadingsKun limit 1"
 var IS_KANJI_TO_READING_ON_EMPTY = "SELECT * FROM kanjisToReadingsOn limit 1"
 var IS_WORDS_EMPTY = "SELECT * FROM words limit 1"
 var IS_WORD_TO_KANJI_EMPTY = "SELECT * FROM wordsToKanji limit 1"
-var SELECT_THREE_RANDOM_KANJIS = "SELECT meaning, kanji FROM kanjis WHERE jlpt=? ORDER BY RAND() LIMIT ?"
-
+var SELECT_RANDOM_WORD = "SELECT * FROM words WHERE jlpt=? ORDER BY RAND() LIMIT ?"
+var SELECT_RANDOM_KANJIS = "SELECT * FROM kanjis WHERE jlpt=? ORDER BY RAND() LIMIT ?"
+var SELECT_WORDS_RELATED_TO_KANJISID = "select * from wordstokanji inner join words ON wordstokanji.idWord = words.id where idKanji=? LIMIT ?;"
 
 async function addUser(name,hash, connection)
 {
@@ -96,10 +104,29 @@ async function createAlltable(connection)
 }
 
 
-export async function getRandomKanjis(connection, limit, jlpt, callback)
+export async function getRandomKanjis(connection, limit, jlpt)
 {
-    var [rows] = await connection.query(SELECT_THREE_RANDOM_KANJIS,[jlpt,limit])
-    callback(rows);
+    var [rows] = await connection.query(SELECT_RANDOM_KANJIS,[jlpt,limit])
+    return rows;
+}
+
+export async function getRandomWords(connection, limit,jlpt )
+{
+    var [rows] = await connection.query(SELECT_RANDOM_WORD,[jlpt, limit]);
+    return rows;
+}
+
+export async function getWordsRelatedToKanjisID(connection,id,limit)
+{
+    var [rows] = await connection.query(SELECT_WORDS_RELATED_TO_KANJISID, [id,limit])
+    if(rows.length < 2)
+    {
+        return null;
+    }
+    else
+    {
+        return rows;
+    }
 }
 
 async function isKanjiTableEmpty(connection)

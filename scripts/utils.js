@@ -28,7 +28,7 @@ export function getValidToken(map)
 
 export function isValidHash(hash)
 {
-    if(typeof(hash) == "undefined" || hash.length != 43)
+    if(typeof(hash) == "undefined" || hash.length != 43 || hash == null)
     {
         return false;
     }

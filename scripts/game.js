@@ -55,20 +55,25 @@ export default class Game
         this.alterPlayerList();
     }
 
-    launch(userHash,gameMod,rounds,jlpt)
+    launch(userHashRequest,gameModRequest,roundsRequest,jlptRequest)
     {
-
-        if(userHash == this.#gameOwner.getUserHash())
-        {
-            this.#rounds = rounds;
-            this.#hasLaunched = true;
-            this.#canJoin = false;
-            this.#gameMod = this.setGameMod(gameMod,jlpt,rounds);
+        if(userHashRequest == this.#gameOwner.getUserHash())
+        {   
+            let error = "";    
+            this.#gameMod = this.setGameMod(gameModRequest,jlptRequest,roundsRequest);
+            if(typeof(this.#gameMod) =="undefined")
+            {
+                error += "Error no gameMod fit : "+ gameModRequest;
+                return error;
+            }
             this.#gameMod.createCardsSet(()=>
             {
                 let response = new GameResponse();
+                this.#rounds = roundsRequest;
+                this.#hasLaunched = true;
+                this.#canJoin = false;
                 response.hasLaunched = this.#hasLaunched;
-                response.gameMod = gameMod;
+                response.gameMod = gameModRequest;
                 this.broadCast("launch",response);
             });
         }
@@ -77,7 +82,7 @@ export default class Game
     start()
     {
         this.#hasStarted = true;
-        var firstCardSet = this.#gameMod.getThreeCard(0);
+        var firstCardSet = this.#gameMod.getCardSet(0);
         var assignment = this.#gameMod.getAssignment(0);
         let response = new GameResponse();
         response.hasStarted = this.#hasStarted;        
@@ -92,7 +97,7 @@ export default class Game
             this.NumberPlayerReady +=1;
             if(this.NumberPlayerReady == this.playerNumber)
             {
-                this.start()
+                this.start();
             }
         }        
     }
@@ -109,7 +114,7 @@ export default class Game
 
     nextRound(round)
     {
-        var cardSet = this.#gameMod.getThreeCard(round);
+        var cardSet = this.#gameMod.getCardSet(round);
         var assignment = this.#gameMod.getAssignment(round);
         let response = new GameResponse();
         response.round = {cards : cardSet ,assignment :assignment}
@@ -148,12 +153,14 @@ export default class Game
             case "gameMod1":
                 gameModObject = new GameMod1(rounds,jlpt);
                 break;
-            case "gameMod1":
+            case "gameMod2":
                 gameModObject = new GameMod2(rounds,jlpt);
                 break;
-            case "gameMod1":
+            case "gameMod3":
                 gameModObject = new GameMod3(rounds,jlpt);
                 break;
+            default:
+                gameModObject = undefined;
         }
         return gameModObject
     }

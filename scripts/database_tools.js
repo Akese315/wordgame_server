@@ -168,10 +168,15 @@ export async function insertAllWords(connection)
 export async function insertAllKanjiToWord(connection)
 {
     var [words] = await connection.query(SELECT_WORDID);
-    console.log(words)
-    for(var index = 0; index < words.length)
+    for(var index = 0; index < words.length; index++)
     {
-        
+        const wordArray = words[index].word.split("")
+        for(var Windex = 0; Windex < wordArray.length; Windex++)
+        {
+            var [id] = await connection.query(SELECT_KANJI_WHERE,wordArray[Windex])
+            if(id.length == 0)continue;
+            await connection.query(INSERT_WORD_TO_KANJI,[id[0].id,words[index].id]);
+        }   
     }
 }
 

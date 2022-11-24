@@ -36,7 +36,11 @@ export class Player extends Client
     {
         if(this.#IsGameOwner)
         {   
-            this.#CurrentGame.launch(this.getUserHash(),data.gameMod,data.round, data.jlpt);
+            let error = this.#CurrentGame.launch(this.getUserHash(),data.gameMod,data.round, data.jlpt);
+            if(typeof(error) =="undefined")
+            {
+                this.sendError(error)
+            }
         }else
         {
             this.sendError("You are not allowed to start a game")
