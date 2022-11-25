@@ -7,7 +7,7 @@ export class Player extends Client
     #point;
     #currentRound
     #CurrentGame;
-    #isAlreadyReady;
+    #isReady;
     #finished;
     #IsGameOwner;
     gameManager;
@@ -51,6 +51,7 @@ export class Player extends Client
     {   
         if(this.#CurrentGame)
         {
+            this.#isReady = false;
             this.#CurrentGame.leave(this.getUserHash());            
             if(this.getUserHash() == this.#CurrentGame.getOwnerHash())
             {
@@ -70,7 +71,7 @@ export class Player extends Client
 
     reconnect()
     {
-        if(this.#CurrentGame != "undefined")
+        if(this.hasGame())
         {
             if(this.#CurrentGame.canReconnect(this.getUserHash()))
             {
@@ -85,10 +86,10 @@ export class Player extends Client
 
     setReady(isReady)
     {
-        if(typeof(this.#CurrentGame) != "undefined")
+        if(this.hasGame())
         {
-            this.#CurrentGame.setPlayerReady(this.#isAlreadyReady)
-            this.#isAlreadyReady = true;
+            this.#CurrentGame.setPlayerReady(this.#isReady)
+            this.#isReady = true;
             this.#currentRound = 0;
         }        
     }
@@ -182,6 +183,15 @@ export class Player extends Client
     hasFinished()
     {
         return this.#finished;
+    }
+
+    hasGame()
+    {
+        if(typeof(this.#CurrentGame) == "undefined" || this.#CurrentGame == null)
+        {
+            return false;
+        } 
+        return true;
     }
 
     increasePoint(newPoint)

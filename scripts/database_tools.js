@@ -1,9 +1,9 @@
 import kanji_jouyou from '../kanji/kanji-data/kanji-jouyou.json'assert { type: 'json' };
-import jlptN5 from '../kanji/kanji-data/vocabulary-jlpt5.json' assert {type : 'json'};
-import jlptN4 from '../kanji/kanji-data/vocabulary-jlpt4.json' assert {type : 'json'};
-import jlptN3 from '../kanji/kanji-data/vocabulary-jlpt3.json' assert {type : 'json'};
-import jlptN2 from '../kanji/kanji-data/vocabulary-jlpt2.json' assert {type : 'json'};
-import jlptN1 from '../kanji/kanji-data/vocabulary-jlpt1.json' assert {type : 'json'};
+import jlptN5 from '../kanji/vocabulary-jlpt5.json' assert {type : 'json'};
+import jlptN4 from '../kanji/vocabulary-jlpt4.json' assert {type : 'json'};
+import jlptN3 from '../kanji/vocabulary-jlpt3.json' assert {type : 'json'};
+import jlptN2 from '../kanji/vocabulary-jlpt2.json' assert {type : 'json'};
+import jlptN1 from '../kanji/vocabulary-jlpt1.json' assert {type : 'json'};
 
 var IS_READING_KUN_ALREADY_SET = "SELECT reading_kun FROM readings_kun where reading_kun=? limit 1"
 var IS_READING_ON_ALREADY_SET = "SELECT reading_on FROM readings_on where reading_on=? limit 1"

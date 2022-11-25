@@ -35,7 +35,7 @@ var IS_WORDS_EMPTY = "SELECT * FROM words limit 1"
 var IS_WORD_TO_KANJI_EMPTY = "SELECT * FROM wordsToKanji limit 1"
 var SELECT_RANDOM_WORD = "SELECT * FROM words WHERE jlpt=? ORDER BY RAND() LIMIT ?"
 var SELECT_RANDOM_KANJIS = "SELECT * FROM kanjis WHERE jlpt=? ORDER BY RAND() LIMIT ?"
-var SELECT_WORDS_RELATED_TO_KANJISID = "select * from wordstokanji inner join words ON wordstokanji.idWord = words.id where idKanji=? LIMIT ?;"
+var SELECT_WORDS_RELATED_TO_KANJISID = "select * from wordsToKanji inner join words ON wordsToKanji.idWord = words.id where idKanji=? LIMIT ?;"
 
 async function addUser(name,hash, connection)
 {
@@ -164,7 +164,7 @@ async function isWordToKanjiEmpty(connection)
     var [rowsWords] = await connection.query(IS_WORD_TO_KANJI_EMPTY);  
     if(rowsWords.length == 0)
     {
-        insertAllKanjiToWord(connection);
+        await insertAllKanjiToWord(connection);
     }
 }
 
@@ -173,7 +173,7 @@ async function isWordEmpty(connection)
     var [rowsWords] = await connection.query(IS_WORDS_EMPTY);  
     if(rowsWords.length == 0)
     {
-        insertAllWords(connection);
+       await insertAllWords(connection);
     }
 }
 

@@ -25,15 +25,18 @@ async function broadcast(eventName,data)
 
 async function createUser(socket)
 {   
-    var client = null;
+    var player = null;
     let response;
     let userHash = socket.handshake.query.userHash;
     if(isValidHash(userHash))
     {
-        client = clientManager.getPlayer()
-        client.reconnect();
+        player = clientManager.getPlayer(userHash)
+        if(typeof(player) != "undefined")
+        {
+            player.reconnect();
+        }        
     }    
-    if(client == null)
+    if(typeof(player) == "undefined" ||player == null)
     {   
         let player = new Player(socket,gameManager)
         clientManager.addPlayer(player);
