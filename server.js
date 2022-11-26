@@ -1,8 +1,8 @@
 import { Player } from "./scripts/player.js";
 import {createPoolConnection} from "./database.js";
 import { Server } from "socket.io";
-import { GameManager, ClientManager } from "./Manager.js";
-import {Response, isValidHash} from "./scripts/utils.js"
+import { playerManager } from "./Manager.js";
+import {isValidHash} from "./scripts/utils.js"
 
 
 
@@ -13,9 +13,6 @@ const io = new Server(3000,
         pingTimeout: 3000
     });
 console.log("Launched")
-
-var gameManager = new GameManager(io)
-var clientManager = new ClientManager();
 
 async function broadcast(eventName,data)
 {
@@ -30,20 +27,21 @@ async function createUser(socket)
     let userHash = socket.handshake.query.userHash;
     if(isValidHash(userHash))
     {
-        player = clientManager.getPlayer(userHash)
+        player = playerManager.getPlayer(userHash)
         if(typeof(player) != "undefined")
         {
-            player.reconnect();
+            player.reconnect(socket);
+            var userInformation = player.getPlayerInformation()
         }        
     }    
     if(typeof(player) == "undefined" ||player == null)
     {   
-        let player = new Player(socket,gameManager)
-        clientManager.addPlayer(player);
+        let player = new Player(socket)
+        playerManager.addPlayer(player);
         let userHash = player.getUserHash()
         response = {userHash : userHash, message : "Player created"}
     }else{
-        response = {userHash : userHash, message: "Player found"};        
+        response = {userHash : userHash, userInformation : userInformation, message: "Player found"};        
     }
     socket.emit("handshakeResponse",response);
 }

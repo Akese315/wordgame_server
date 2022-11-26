@@ -19,6 +19,12 @@ export default class Client
         this.#userSocket = socket;
         this.broadcast = broadcast;
         this.#userAdress = socket.handshake.address;
+        this.#setEvent();
+        this.#connected();
+    }
+
+    #setEvent()
+    {
         this.#setJoinEvent()
         this.#setCreateEvent()
         this.#setPseudoEvent()
@@ -26,8 +32,6 @@ export default class Client
         this.#setReadyEvent()
         this.#setAnswerEvent()
         this.#setDisconnectEvent()
-       
-        this.#connected();
     }
 
     #setJoinEvent()
@@ -90,7 +94,7 @@ export default class Client
                 this.#pseudoCallback(data);
             }else
             {
-                 this.sendError("Non valid userHash")
+                this.sendError("Non valid userHash")
             } 
         });
     }
@@ -164,6 +168,19 @@ export default class Client
         console.log("User connected : "+this.#userAdress)
     }
 
+    clientReconnect(socket)
+    {
+        console.log("User has reconnected : "+this.#userAdress)
+        this.#setSocket(socket);
+        this.#setEvent()
+    }
+
+    #setSocket(socket)
+    {
+        this.#userSocket.disconnect(true);
+        this.#userSocket = socket;
+    }
+
     getHandShake()
     {
         return this.#userSocket.handshake;
@@ -182,6 +199,11 @@ export default class Client
     getUserHash()
     {
         return this.#userHash;
+    }
+
+    getUserAdress()
+    {
+        return  this.#userAdress;
     }
 
     sendError(error)

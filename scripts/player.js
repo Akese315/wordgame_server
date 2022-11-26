@@ -1,21 +1,18 @@
 import Client from './client.js'
-import Game from "./game.js";
+import { gameManager } from '../Manager.js';
 
 export class Player extends Client
 {
     #pseudo;
     #point;
-    #currentRound
-    #CurrentGame;
+    #currentRound;
+    #gameHash;
     #isReady;
     #finished;
-    #IsGameOwner;
-    gameManager;
 
-    constructor(socket,gameManager)
+    constructor(socket)
     {
         super(socket);
-        this.gameManager = gameManager;
         this.#point = 0;
         this.#finished = false
         this.setPseudoCallback(this.setPseudo);
@@ -24,58 +21,49 @@ export class Player extends Client
         this.setLaunchCallback(this.launchGame)
         this.setCreateCallback(this.creategame)
         this.setReadyCallback(this.setReady)
-        this.setAnswerCallback(this.sendAnswer)
-    }
-
-    setClientPseudo(pseudo)
-    {
-        this.#pseudo = pseudo;
+        this.setAnswerCallback(this.receiveAnswer)
     }
 
     launchGame(data)
     {
-        if(this.#IsGameOwner)
-        {   
-            let error = this.#CurrentGame.launch(this.getUserHash(),data.gameMod,data.round, data.jlpt);
-            if(typeof(error) =="undefined")
-            {
-                this.sendError(error)
-            }
-        }else
+        let currentGame = this.#getGame(this.#gameHash)           
+        let error = currentGame.launch(this.getUserHash(),data.gameMod,data.round, data.jlpt);
+        if(typeof(error) !="undefined")
         {
-            this.sendError("You are not allowed to start a game")
-        }
+            this.sendError(error)
+        }    
     }
 
     disconnect()
     {   
-        if(this.#CurrentGame)
+        let currentGame = this.#getGame()
+        if(this.hasGame(currentGame))
         {
             this.#isReady = false;
-            this.#CurrentGame.leave(this.getUserHash());            
-            if(this.getUserHash() == this.#CurrentGame.getOwnerHash())
+            currentGame.leave(this.getUserHash());            
+            if(this.getUserHash() == currentGame.getOwnerHash())
             {
-                if(this.#CurrentGame.getPlayerList().length == 0)
+                if(currentGame.getPlayerList().length == 0)
                 {
-                    console.log(this.gameManager.getGamesNumber());
-                    this.gameManager.removeGame(this.#CurrentGame.getGameHash())
-                    console.log(this.gameManager.getGamesNumber());
+                    gameManager.removeGame(this.#gameHash)
                 }else
                 {
-                    this.#CurrentGame.choseNewOwner();
+                    currentGame.choseNewOwner();
                 }
             }
         }       
-        console.log("User disconnected : "+this.getUserHash())
+        console.log("User disconnected : "+this.getUserAdress())
     }
 
-    reconnect()
+    reconnect(socket)
     {
-        if(this.hasGame())
+        this.clientReconnect(socket);
+        let currentGame = this.#getGame();
+        if(this.hasGame(currentGame))
         {
-            if(this.#CurrentGame.canReconnect(this.getUserHash()))
+            if(currentGame.canReconnect(this.getUserHash()))
             {
-                this.#CurrentGame.join(this);
+                currentGame.join(this);
             }
         }
         else
@@ -86,32 +74,34 @@ export class Player extends Client
 
     setReady(isReady)
     {
-        if(this.hasGame())
+        let currentGame = this.#getGame();
+        if(this.hasGame(currentGame))
         {
-            this.#CurrentGame.setPlayerReady(this.#isReady)
-            this.#isReady = true;
+            this.#isReady = isReady;
+            currentGame.setPlayerReady(this.#isReady)
             this.#currentRound = 0;
         }        
     }
 
-    sendAnswer(answer)
+    receiveAnswer(answer)
     {   
         if(this.#finished)
         {
             this.sendError("the game is finished for you");
             return;
         }
-        this.#CurrentGame.checkAnswer(answer,this);
+        let currentGame = this.#getGame();
+        currentGame.checkAnswer(answer,this.getUserHash(), this.#currentRound);
         this.#currentRound += 1;
-        if(this.#CurrentGame.getTotalRound() <= this.#currentRound)
+        if(currentGame.getTotalRound() <= this.#currentRound)
         {
             this.#finished = true;
-            this.#CurrentGame.finishGame(this.getPseudo()); 
+            currentGame.finishGame(this.getUserHash()); 
             this.sendResponse("endGame",{playerFinished : this.#finished});                 
                  
         }else
         {
-            let response = this.#CurrentGame.nextRound(this.#currentRound)
+            let response = currentGame.nextRound(this.#currentRound)
             this.sendResponse("round", response);
         }      
     }
@@ -119,64 +109,41 @@ export class Player extends Client
     join(data)
     {   
         let tempGameHash = data.gameHash;
-        let timeStart = Date.now();
-        var game =  this.gameManager.getGame(tempGameHash)
-        if(!game)
+        var currentGame = gameManager.getGame(tempGameHash);
+        if(typeof(currentGame) == "undefined")
         {
             this.sendError("can't find game")
             return;
         }
-        if(game.isJoinable())
+        if(currentGame.isJoinable())
         {
-            game.join(this);
-            this.#IsGameOwner = false;
-            this.#CurrentGame = game;
-            let playerlist = this.#CurrentGame.getPlayerList(); 
+            currentGame.join(this.getUserHash());
+            this.#gameHash = tempGameHash;
+            let playerlist = currentGame.getPlayerList(); 
             let response = {playerList : playerlist};
             this.sendResponse("join", response)                                  
         }
-        //console.log("duration createGame : " +(Date.now()-timeStart))  
     }
 
     creategame()
     {
-        var timeStart = Date.now();
-
-        if(this.#IsGameOwner)
-        {
-            let playerList = this.#CurrentGame.getPlayerList();
-            let gameHash = this.#CurrentGame.getGameHash();
-            let response = {message:"You already own a game",gameHash: gameHash, playerList : playerList}
-            //console.log("duration createGame : " +(Date.now()-timeStart))
-            this.sendResponse("create", response);
-            return;
-        }
-
-        this.#IsGameOwner = true;
-        let game = new Game()
-        this.#CurrentGame = this.gameManager.addGame(this, game)
-        let playerList = this.#CurrentGame.getPlayerList();
-        let gameHash = this.#CurrentGame.getGameHash();
-        let response = {message:"Game created",gameHash: gameHash, playerList : playerList}
-        //console.log("duration createGame : " +(Date.now()-timeStart))
+        this.#gameHash = gameManager.addGame(this.getUserHash())
+        var currentGame = this.#getGame();
+        let playerList = currentGame.getPlayerList();        
+        let response = {message:"Game created",gameHash: this.#gameHash, playerList : playerList}        
         this.sendResponse("create", response);
     }
 
     setPseudo(data)
     {
-        var timeStart = Date.now();
         let tempPseudo = data.pseudo;
-
         if(typeof(tempPseudo) =="undefined" || tempPseudo.length > 10)
         {
             this.sendError("pseudo is not valid")
             return;
         }
-
-        this.setClientPseudo(tempPseudo);
-
+        this.#pseudo = tempPseudo;
         let response = {message : "pseudo has been set", pseudo: this.#pseudo}
-        //console.log("duration setPseudo : " +(Date.now()-timeStart))
         this.sendResponse("setPseudo",response)
     }
 
@@ -187,7 +154,8 @@ export class Player extends Client
 
     hasGame()
     {
-        if(typeof(this.#CurrentGame) == "undefined" || this.#CurrentGame == null)
+        let currentGame = this.#getGame();
+        if(typeof(currentGame) == "undefined" || currentGame == null)
         {
             return false;
         } 
@@ -209,6 +177,11 @@ export class Player extends Client
         return this.#pseudo;
     }
 
+    #getGame()
+    {
+        return gameManager.getGame(this.#gameHash);
+    }
+
     getPoint()
     {
         return this.#point;
@@ -217,5 +190,19 @@ export class Player extends Client
     getCurrentRound()
     {
         return this.#currentRound;
+    }
+
+    getPlayerInformation()
+    {
+        let gameStatus;
+        let currentGame = this.#getGame();        
+        if(this.hasGame(currentGame))
+        {
+            gameStatus = currentGame.getGameStatus();
+        }
+        return{
+            pseudo : this.getPseudo(),
+            gameStatus : gameStatus
+        }
     }
 }

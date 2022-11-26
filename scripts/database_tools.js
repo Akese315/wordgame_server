@@ -1,4 +1,4 @@
-import kanji_jouyou from '../kanji/kanji-data/kanji-jouyou.json'assert { type: 'json' };
+import kanji_jouyou from '../kanji/kanji-jouyou.json'assert { type: 'json' };
 import jlptN5 from '../kanji/vocabulary-jlpt5.json' assert {type : 'json'};
 import jlptN4 from '../kanji/vocabulary-jlpt4.json' assert {type : 'json'};
 import jlptN3 from '../kanji/vocabulary-jlpt3.json' assert {type : 'json'};

@@ -1,6 +1,7 @@
+import Game from './scripts/game.js'
 import {getValidToken} from './scripts/utils.js'
 
-export class GameManager
+class GameManager
 {
     #gamesNumber = 0
     #gameList
@@ -17,19 +18,23 @@ export class GameManager
         return this.#gamesNumber;
     }
 
-    addGame(Player, game)
-    {
-        game.setOwner(Player);
-        game.setGameHash(getValidToken(this.#gameList))
-        this.#gameList.set(game.getGameHash(), game)
+    addGame(playerHash)
+    {  
+        var gameHash = getValidToken(this.#gameList);
+        var game = new Game(gameHash);  
+        game.setOwner(playerHash);        
+        this.#gameList.set(gameHash, game)
         this.#gamesNumber +=1;
-        return game;
+        return gameHash;
     }
 
     removeGame(gameHash)
     {
+        var game = this.#gameList.get(gameHash);
+        game = undefined;
         this.#gameList.delete(gameHash);
         this.#gamesNumber -=1;
+        console.log("%cGame : " + gameHash + " has been deleted", "color: #bada55");
     }
 
     findGame(gameHash)
@@ -49,7 +54,7 @@ export class GameManager
     }
 }
 
-export class ClientManager
+class ClientManager
 {
 
 #playerList;
@@ -66,9 +71,9 @@ addPlayer(player)
     this.#playerList.set(userHash,player)
 }
 
-getPlayer(key)
+getPlayer(playerHash)
 {      
-    return this.#playerList.get(key);        
+    return this.#playerList.get(playerHash);        
 }
 
 removePlayer(key)
@@ -82,3 +87,7 @@ getPlayerBySocket()
 }
 
 }
+
+
+export var gameManager = new GameManager()
+export var playerManager = new ClientManager();
