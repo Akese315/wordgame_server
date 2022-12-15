@@ -13,6 +13,7 @@ export default class Client
     #disconnectCallback
     #readyCallback
     #answerCallback
+    #restartCallback
 
     constructor(socket, broadcast)
     {   
@@ -32,6 +33,8 @@ export default class Client
         this.#setReadyEvent()
         this.#setAnswerEvent()
         this.#setDisconnectEvent()
+        this.#setRestartEvent()
+        
     }
 
     #setJoinEvent()
@@ -82,6 +85,14 @@ export default class Client
         this.#userSocket.on("ready",(data)=>
         {            
             this.#readyCallback(data.isReady);            
+        })
+    }
+
+    #setRestartEvent()
+    {
+        this.#userSocket.on("restart",(data)=>
+        {            
+            this.#restartCallback(data);            
         })
     }
 
@@ -162,6 +173,11 @@ export default class Client
     {
         this.#launchCallback = callback;
     }
+    
+    setRestartCallback(callback)
+    {
+        this.#restartCallback = callback;
+    }
 
     #connected()
     {
@@ -209,6 +225,14 @@ export default class Client
     sendError(error)
     {
         this.#userSocket.emit("error",error)
+    }
+
+    sendInfo(redirect, message)
+    {
+        let info = {redirect : undefined, message: undefined}
+        info.redirect = redirect;
+        info.message = message;
+        this.#userSocket.emit("info", info)
     }
 
     sendResponse(eventName,dataObject)

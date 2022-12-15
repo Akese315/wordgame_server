@@ -4,17 +4,11 @@ import { gameManager } from '../Manager.js';
 export class Player extends Client
 {
     #pseudo;
-    #point;
-    #currentRound;
     #gameHash;
-    #isReady;
-    #finished;
 
     constructor(socket)
     {
         super(socket);
-        this.#point = 0;
-        this.#finished = false
         this.setPseudoCallback(this.setPseudo);
         this.setDisconnectCallback(this.disconnect);
         this.setJoinCallback(this.join);
@@ -22,6 +16,7 @@ export class Player extends Client
         this.setCreateCallback(this.creategame)
         this.setReadyCallback(this.setReady)
         this.setAnswerCallback(this.receiveAnswer)
+        this.restartCallback(this.restart)
     }
 
     launchGame(data)
@@ -30,7 +25,7 @@ export class Player extends Client
         let error = currentGame.launch(this.getUserHash(),data.gameMod,data.round, data.jlpt);
         if(typeof(error) !="undefined")
         {
-            this.sendError(error)
+            this.info(undefined,error)
         }    
     }
 
@@ -39,7 +34,6 @@ export class Player extends Client
         let currentGame = this.#getGame()
         if(this.hasGame(currentGame))
         {
-            this.#isReady = false;
             currentGame.leave(this.getUserHash());            
             if(this.getUserHash() == currentGame.getOwnerHash())
             {
@@ -55,53 +49,71 @@ export class Player extends Client
         console.log("User disconnected : "+this.getUserAdress())
     }
 
+    restart()
+    {
+        let currentGame = this.#getGame();
+        if(this.hasGame(currentGame))
+        {
+            currentGame.restart(this.getUserHash())
+        }
+    }
+
     reconnect(socket)
     {
         this.clientReconnect(socket);
         let currentGame = this.#getGame();
         if(this.hasGame(currentGame))
         {
-            if(currentGame.canReconnect(this.getUserHash()))
+            let reconnected = currentGame.reconnect(this.getUserHash(), this.getPseudo());
+            if(!reconnected)
             {
-                currentGame.join(this);
+                this.#gameHash = undefined;
+                this.sendInfo("home","You can't reconnect to the game.")
             }
+            else
+            {
+                this.sendInfo("game","The player has a game, redirect to the game");
+            }            
         }
         else
         {
-            console.log("Player has no game : redirect to the home.")
+            console.log("Player has no game or ended")
+            this.sendInfo("home");
         }
     }
 
-    setReady(isReady)
+    setReady()
     {
         let currentGame = this.#getGame();
         if(this.hasGame(currentGame))
         {
-            this.#isReady = isReady;
-            currentGame.setPlayerReady(this.#isReady)
-            this.#currentRound = 0;
+            if(currentGame.hasStarted())
+            {
+                let round = currentGame.nextRound(this.getUserHash())
+                this.sendResponse("ready",{round : round, started : true})
+            }
+            else
+            {
+                currentGame.setPlayerReady()
+            }            
+        }
+        else
+        {
+            this.sendInfo("home");
         }        
     }
 
     receiveAnswer(answer)
     {   
-        if(this.#finished)
-        {
-            this.sendError("the game is finished for you");
-            return;
-        }
         let currentGame = this.#getGame();
-        currentGame.checkAnswer(answer,this.getUserHash(), this.#currentRound);
-        this.#currentRound += 1;
-        if(currentGame.getTotalRound() <= this.#currentRound)
+        currentGame.checkAnswer(answer,this.getUserHash());
+        if(currentGame.hasPlayerFinished(this.getUserHash()))
         {
-            this.#finished = true;
-            currentGame.finishGame(this.getUserHash()); 
-            this.sendResponse("endGame",{playerFinished : this.#finished});                 
+            this.sendResponse("endGame",{playerFinished : true});              
                  
         }else
         {
-            let response = currentGame.nextRound(this.#currentRound)
+            let response = currentGame.nextRound(this.getUserHash())
             this.sendResponse("round", response);
         }      
     }
@@ -117,7 +129,7 @@ export class Player extends Client
         }
         if(currentGame.isJoinable())
         {
-            currentGame.join(this.getUserHash());
+            currentGame.join(this.getUserHash(), this.getPseudo());
             this.#gameHash = tempGameHash;
             let playerlist = currentGame.getPlayerList(); 
             let response = {playerList : playerlist};
@@ -127,11 +139,12 @@ export class Player extends Client
 
     creategame()
     {
-        this.#gameHash = gameManager.addGame(this.getUserHash())
+        this.#gameHash = gameManager.addGame(this.getUserHash(), this.getPseudo())
         var currentGame = this.#getGame();
         let playerList = currentGame.getPlayerList();        
         let response = {message:"Game created",gameHash: this.#gameHash, playerList : playerList}        
         this.sendResponse("create", response);
+        this.sendInfo("lobby");
     }
 
     setPseudo(data)
@@ -147,29 +160,13 @@ export class Player extends Client
         this.sendResponse("setPseudo",response)
     }
 
-    hasFinished()
+    hasGame(currentGame)
     {
-        return this.#finished;
-    }
-
-    hasGame()
-    {
-        let currentGame = this.#getGame();
         if(typeof(currentGame) == "undefined" || currentGame == null)
         {
             return false;
         } 
         return true;
-    }
-
-    increasePoint(newPoint)
-    {
-        this.#point += newPoint;
-    }
-    
-    getCurrentRound()
-    {
-        return this.#currentRound;
     }
 
     getPseudo()
@@ -179,17 +176,11 @@ export class Player extends Client
 
     #getGame()
     {
+        if(typeof(this.#gameHash) =="undefined")
+        {
+            return;
+        }
         return gameManager.getGame(this.#gameHash);
-    }
-
-    getPoint()
-    {
-        return this.#point;
-    }
-
-    getCurrentRound()
-    {
-        return this.#currentRound;
     }
 
     getPlayerInformation()

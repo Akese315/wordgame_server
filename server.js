@@ -3,16 +3,29 @@ import {createPoolConnection} from "./database.js";
 import { Server } from "socket.io";
 import { playerManager } from "./Manager.js";
 import {isValidHash} from "./scripts/utils.js"
+import http from 'http'
+import express from "express";
+import history from "connect-history-api-fallback"
 
 
+const path ='./views/'
+const PORT = process.env.SERVER_PORT
 
-const io = new Server(3000,
-    {
-        serveClient : false,
-        path:"/",
-        pingTimeout: 3000
-    });
-console.log("Launched")
+const app = express();
+app.use(history());
+app.use(express.static(path))
+
+
+const server = http.Server(app);
+
+server.listen(PORT,"0.0.0.0", () => {
+    console.log(`Server is running on port ${PORT}.`);
+  });
+
+const io = new Server(server, {
+    path:"/socket",
+    pingTimeout: 3000
+});
 
 async function broadcast(eventName,data)
 {

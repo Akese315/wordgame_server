@@ -9,35 +9,49 @@ export default class Game
     NumberPlayerReady = 0
     #rounds = 1;
     #playerList;
-    #hasStarted = false;
+    #deconnectedPlayer
+    #started = false;
     #hasEnded = false;
     #canJoin = false;
     #inLobby = true;
-    #gameMod;
-    #deconnectedPlayer
-    #rankingList
+    #gameMod = undefined;
+   
 
     constructor(gameHash)
     {
         this.#gameHash = gameHash;
-        this.#playerList = new Array();
-        this.#deconnectedPlayer = new Array();
-        this.#rankingList = new Array();
+        this.#playerList = new Map();
+        this.#deconnectedPlayer = new Map();
     }
 
     broadCast(event, response)
     {
-        for(let i = 0; i<this.#playerList.length; i++)
+        for(let playerHash of this.#playerList.keys())
         {
-            let player = this.getPlayer(this.#playerList[i])
+            let player = this.getPlayer(playerHash)
             player.sendResponse(event,response)
         }
     }
 
-    setOwner(playerHash)
+    redirectEveryone(where, message)
+    {
+        for(let playerHash of this.#playerList.keys())
+        {
+            let player = this.getPlayer(playerHash)
+            player.sendInfo(where,message)
+        }
+    }
+
+    setOwner(playerHash,pseudo)
     {
         this.#gameOwner = playerHash;
-        this.#playerList.push(this.#gameOwner)
+        var playerProps = new PlayerProperty();
+        playerProps.pseudo = pseudo;
+        playerProps.point = 0;
+        playerProps.owner = true;
+        playerProps.hasFinished = false;
+        playerProps.currentRound = 0;
+        this.#playerList.set(playerHash, playerProps);
         this.playerNumber += 1
         this.#canJoin = true;
     }
@@ -51,9 +65,15 @@ export default class Game
         return false;
     }
 
-    join(playerHash)
+    join(playerHash, pseudo)
     {        
-        this.#playerList.push(playerHash);
+        var playerProps = new PlayerProperty();
+        playerProps.pseudo = pseudo;
+        playerProps.point = 0;
+        playerProps.owner = false;
+        playerProps.hasFinished = false;
+        playerProps.currentRound = 0;
+        this.#playerList.set(playerHash,playerProps);
         this.playerNumber += 1
         this.alterPlayerList();
     }
@@ -69,13 +89,13 @@ export default class Game
                 return "Error no gameMod fit : "+ gameModTemp;
             }
             this.#gameMod.createCardsSet(()=>
-            {
-                let response = new GameResponse();
+            {                
                 this.#rounds = roundsTemp;
                 this.#inLobby = true;
                 this.#canJoin = false;
+                let response = new GameResponse();
                 response.gameMod = gameModTemp;
-                this.broadCast("launch",response);
+                this.redirectEveryone("game")
             });
         }
         else
@@ -84,14 +104,30 @@ export default class Game
         }
     }
 
-    start()
+    start(userHash)
     {
-        this.#hasStarted = true;
-        var firstCardSet = this.#gameMod.getCardSet(0);
-        var assignment = this.#gameMod.getAssignment(0);
-        let response = new GameResponse();       
-        response.round = {cards : firstCardSet ,assignment :assignment}
-        this.broadCast("round",response);
+        if(this.hasEveryoneFinished() && userHash == this.#gameOwner)
+        {
+            this.#started = true;
+            var cardSet = this.#gameMod.getCardSet(0);
+            var assignment = this.#gameMod.getAssignment(0);
+            let response = new GameResponse();
+            response.round = {cards : cardSet ,assignment :assignment, round : 0}
+            this.redirectEveryone("game", "restart the game")
+        }        
+    }
+
+    reStart()
+    {
+        this.#started = false;
+        for(let playerHash of this.#playerList.keys())
+        {
+            let player = this.#playerList.get(playerHash)
+            player.point = 0;
+        }
+        let FormattedList = this.getPlayerList()
+        this.broadCast("playerList", {playerList : FormattedList})
+        this.broadCast("start");
     }
 
     setPlayerReady()
@@ -103,44 +139,76 @@ export default class Game
         }                
     }
 
-    checkAnswer(answer, playerHash, round)
+    checkAnswer(answer, playerHash)
     {
-        let player = this.getPlayer(playerHash);
-        if(this.#gameMod.checkAnswer(answer, round))
+        let player = this.#playerList.get(playerHash);
+        if(player.hasFinished)
         {
-            player.increasePoint(100);
+            return;
+        }
+        if(this.#gameMod.checkAnswer(answer,player.currentRound))
+        {
+            player.point +=100;
+            player.currentRound +=1;
+            this.#playerList.set(playerHash, player)
             let FormattedList = this.getPlayerList()
             this.broadCast("playerList", {playerList : FormattedList})
         }
     }
 
-    nextRound(round)
+    nextRound(userHash)
     {
+        let round = this.#playerList.get(userHash).currentRound;
         var cardSet = this.#gameMod.getCardSet(round);
         var assignment = this.#gameMod.getAssignment(round);
         let response = new GameResponse();
-        response.round = {cards : cardSet ,assignment :assignment}
+        response.round = {cards : cardSet ,assignment :assignment, round : round}
         return response;
     }
 
     finishGame(playerHash)
     {
-        this.#rankingList.push(playerHash);
-        //envoie des update sur les player
+        let object = this.#playerList.get(playerHash);
+        object.hasFinished = true;
+        this.#playerList.set(playerHash, object)
+
         let response = new GameResponse();
         response.playerList = this.getPlayerList();
         response.hasEnded = this.#hasEnded;     
         this.broadCast("playerList", response)      
-        // ça je touche pas //
-        if(this.#rankingList.length == this.#playerList.length)
+
+        if(this.hasEveryoneFinished())
         {
             //quand tout les joueurs ont fini
             this.#hasEnded = true;
             let response = new GameResponse();
-            response.rankingList = this.getPlayerPseudo(this.#rankingList);
+            response.rankingList = this.getPlayerPseudo();
             //envoie à tout les joueurs le rankinglist
             this.broadCast("rankingList",response)
         }               
+    }
+
+    hasEveryoneFinished()
+    {
+        for(let player of this.#playerList.keys())
+        {
+            if(!player.hasFinished)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    hasPlayerFinished(userHash)
+    {
+        let player = this.#playerList.get(userHash)
+        if(player.currentRound == this.#rounds)
+        {
+            this.finishGame(userHash)
+            return true;
+        }
+        return false;
     }
 
     setGameMod(gameMod, rounds, jlpt)
@@ -165,23 +233,44 @@ export default class Game
 
     canReconnect(userHash)
     {
-        let index =  this.#deconnectedPlayer.indexOf(userHash)
-        if(index!= -1)
+        let has = this.#deconnectedPlayer.has(userHash)
+        if(!has)
         {
             return false;
         }
-        this.#deconnectedPlayer.splice(index,1);
         return true;
+    }
+
+    reconnect(userHash, pseudo)
+    {
+        if(this.#started)
+        {
+            if(!this.canReconnect(userHash))
+            {
+                return false;
+            }
+            this.#playerList.set(userHash,this.#deconnectedPlayer.get(userHash));
+            this.#deconnectedPlayer.delete(userHash);
+            this.playerNumber += 1
+            this.alterPlayerList();
+            return true;
+        }
+        else
+        {
+            this.join(userHash, pseudo);
+            return true;
+        }     
+       
     }
 
     leave(userHash)
     {
-        if(this.#hasStarted)
+        if(this.#started)
         {
-            this.#deconnectedPlayer.push(userHash);
+            this.#deconnectedPlayer.set(userHash,this.#playerList.get(userHash));
         }
-        let index = this.getIndexByHash(userHash, this.#playerList)
-        this.#playerList.splice(index,1)
+        this.#playerList.delete(userHash)
+        this.playerNumber -=1;
         this.alterPlayerList();
     }
 
@@ -200,18 +289,6 @@ export default class Game
         return this.#gameOwner;
     }
 
-    getIndexByHash(hash,list)
-    {
-        for(var i = 0; i<list.length; i++ )
-        {
-            if(hash == list[i])
-            {
-                return i;
-            }
-        }
-        return null;
-    }
-
     getTotalRound()
     {
         return this.#rounds;
@@ -220,29 +297,25 @@ export default class Game
     getPlayerList()
     {
         var playerListFormatted = [];
-        for(var i =0; i<this.#playerList.length; i++)
+        for(let playerHash of this.#playerList.keys())
         {
-            let player = this.getPlayer(this.#playerList[i])
+            let player = this.#playerList.get(playerHash)
             playerListFormatted.push({
-                pseudo : player.getPseudo(), 
-                point : player.getPoint(),
-                hasFinished : player.hasFinished()
+                pseudo : player.pseudo, 
+                point : player.point,
+                hasFinished : player.hasFinished
             })
         }
         return playerListFormatted;
     }
 
-    getPlayerPseudo(list)
+    getPlayerPseudo()
     {
         let playerPseudoList = []
-        for(let i = 0; i < list.length; i++)
-        {
-            let player = this.getPlayer(list[i]);
-            if(typeof(player)=="undefined")
-            {
-                continue;
-            }
-            playerPseudoList.push(player.getPseudo());
+        for(let playerHash of this.#playerList.keys())
+        {           
+            let player = this.#playerList.get(playerHash)
+            playerPseudoList.push(player.pseudo);
         }
         return playerPseudoList;
     }
@@ -264,8 +337,13 @@ export default class Game
     {
         return {
             hasEnded : this.#hasEnded,
-            hasStart : this.#hasStarted
+            hasStart : this.#started
          }
+    }
+
+    hasStarted()
+    {
+        return this.started;
     }
 }
 
@@ -277,4 +355,13 @@ class GameResponse
     hasEnded;
     gameMod;
     rankingList;
+}
+
+class PlayerProperty
+{
+    pseudo;
+    point;
+    hasFinished;
+    owner;
+    currentRound;
 }
