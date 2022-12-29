@@ -28,7 +28,11 @@ export default class Game
     {
         for(let playerHash of this.#playerList.keys())
         {
-            let player = this.getPlayer(playerHash)
+            let player = this.getPlayer(playerHash);
+            if(typeof(player) == "undefined")
+            {
+                console.error("player undefined")
+            }
             player.sendResponse(event,response)
         }
     }
@@ -89,13 +93,13 @@ export default class Game
                 return "Error no gameMod fit : "+ gameModTemp;
             }
             this.#gameMod.createCardsSet(()=>
-            {                
+            {
                 this.#rounds = roundsTemp;
                 this.#inLobby = true;
                 this.#canJoin = false;
                 let response = new GameResponse();
                 response.gameMod = gameModTemp;
-                this.redirectEveryone("game")
+                this.redirectEveryone("game");
             });
         }
         else
@@ -104,20 +108,18 @@ export default class Game
         }
     }
 
-    start(userHash)
+    start()
     {
-        if(this.hasEveryoneFinished() && userHash == this.#gameOwner)
-        {
-            this.#started = true;
-            var cardSet = this.#gameMod.getCardSet(0);
-            var assignment = this.#gameMod.getAssignment(0);
-            let response = new GameResponse();
-            response.round = {cards : cardSet ,assignment :assignment, round : 0}
-            this.redirectEveryone("game", "restart the game")
-        }        
+        
+        this.#started = true;
+        var cardSet = this.#gameMod.getCardSet(0);
+        var assignment = this.#gameMod.getAssignment(0);
+        let response = new GameResponse();
+        response.round = {cards : cardSet ,assignment :assignment, round : 0}        
+        this.broadCast("ready",response);              
     }
 
-    reStart()
+    reLaunch()
     {
         this.#started = false;
         for(let playerHash of this.#playerList.keys())
@@ -125,9 +127,12 @@ export default class Game
             let player = this.#playerList.get(playerHash)
             player.point = 0;
         }
-        let FormattedList = this.getPlayerList()
-        this.broadCast("playerList", {playerList : FormattedList})
-        this.broadCast("start");
+        let FormattedList = this.getPlayerList();  
+        this.#gameMod.createCardsSet(()=>
+        {
+            this.broadCast("playerList", {playerList : FormattedList})
+            this.redirectEveryone("game");
+        });        
     }
 
     setPlayerReady()

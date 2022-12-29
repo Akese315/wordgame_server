@@ -16,7 +16,7 @@ export class Player extends Client
         this.setCreateCallback(this.creategame)
         this.setReadyCallback(this.setReady)
         this.setAnswerCallback(this.receiveAnswer)
-        this.restartCallback(this.restart)
+        this.setRestartCallback(this.restart)
     }
 
     launchGame(data)
@@ -54,7 +54,7 @@ export class Player extends Client
         let currentGame = this.#getGame();
         if(this.hasGame(currentGame))
         {
-            currentGame.restart(this.getUserHash())
+            currentGame.restart(this.getUserHash());
         }
     }
 
@@ -133,7 +133,14 @@ export class Player extends Client
             this.#gameHash = tempGameHash;
             let playerlist = currentGame.getPlayerList(); 
             let response = {playerList : playerlist};
-            this.sendResponse("join", response)                                  
+            this.sendResponse("join", response);
+            if(currentGame.getGameStatus().hasStart)
+            {
+                this.sendInfo("game")
+            }else
+            {
+                this.sendInfo("lobby")
+            }                  
         }
     }
 

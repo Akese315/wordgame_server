@@ -18,7 +18,7 @@ app.use(express.static(path))
 
 const server = http.Server(app);
 
-server.listen(PORT,"0.0.0.0", () => {
+server.listen(PORT,"localhost", () => {
     console.log(`Server is running on port ${PORT}.`);
   });
 
