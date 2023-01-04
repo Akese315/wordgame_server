@@ -23,7 +23,7 @@ server.listen(PORT,"localhost", () => {
   });
 
 const io = new Server(server, {
-    path:"/socket",
+    path:"/socket/",
     pingTimeout: 3000
 });
 
@@ -35,7 +35,8 @@ async function broadcast(eventName,data)
 
 async function createUser(socket)
 {   
-    var player = null;
+    let player;
+    let userInformation;
     let response;
     let userHash = socket.handshake.query.userHash;
     if(isValidHash(userHash))
@@ -44,17 +45,17 @@ async function createUser(socket)
         if(typeof(player) != "undefined")
         {
             player.reconnect(socket);
-            var userInformation = player.getPlayerInformation()
+            userInformation = player.getPlayerInformation();
         }        
     }    
     if(typeof(player) == "undefined" ||player == null)
     {   
-        let player = new Player(socket)
+        let player = new Player(socket);
         playerManager.addPlayer(player);
-        let userHash = player.getUserHash()
-        response = {userHash : userHash, message : "Player created"}
+        userInformation = player.getPlayerInformation();       
+        response = {userInformation : userInformation, message : "Player created"}
     }else{
-        response = {userHash : userHash, userInformation : userInformation, message: "Player found"};        
+        response = {userInformation : userInformation, message: "Player found"};        
     }
     socket.emit("handshakeResponse",response);
 }

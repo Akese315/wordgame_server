@@ -7,27 +7,31 @@ export default class Game
     #gameHash;
     playerNumber = 0
     NumberPlayerReady = 0
-    #rounds = 1;
+    
     #playerList;
     #deconnectedPlayer
     #started = false;
     #hasEnded = false;
     #canJoin = false;
     #inLobby = true;
-    #gameMod = undefined;
-   
+    #gameMod = undefined
+    #rules   
+
 
     constructor(gameHash)
     {
         this.#gameHash = gameHash;
         this.#playerList = new Map();
         this.#deconnectedPlayer = new Map();
+        this.#rules = new Rules();
     }
 
-    broadCast(event, response)
+    broadCast(event, response,except)
     {
         for(let playerHash of this.#playerList.keys())
         {
+            if(except == playerHash)continue;
+
             let player = this.getPlayer(playerHash);
             if(typeof(player) == "undefined")
             {
@@ -42,11 +46,12 @@ export default class Game
         for(let playerHash of this.#playerList.keys())
         {
             let player = this.getPlayer(playerHash)
-            player.sendInfo(where,message)
+            player.sendRedirect(where);
+            player.sendInfo(message);            
         }
     }
 
-    setOwner(playerHash,pseudo)
+    setOwner(playerHash,pseudo,icon)
     {
         this.#gameOwner = playerHash;
         var playerProps = new PlayerProperty();
@@ -55,6 +60,7 @@ export default class Game
         playerProps.owner = true;
         playerProps.hasFinished = false;
         playerProps.currentRound = 0;
+        playerProps.icon = icon;
         this.#playerList.set(playerHash, playerProps);
         this.playerNumber += 1
         this.#canJoin = true;
@@ -69,7 +75,7 @@ export default class Game
         return false;
     }
 
-    join(playerHash, pseudo)
+    join(playerHash, pseudo,icon)
     {        
         var playerProps = new PlayerProperty();
         playerProps.pseudo = pseudo;
@@ -77,35 +83,28 @@ export default class Game
         playerProps.owner = false;
         playerProps.hasFinished = false;
         playerProps.currentRound = 0;
+        playerProps.icon = icon;
         this.#playerList.set(playerHash,playerProps);
         this.playerNumber += 1
         this.alterPlayerList();
     }
 
-    launch(playerHash,gameModTemp,roundsTemp,jlptTemp)
+    launch(playerHash)
     {
-        if(playerHash == this.#gameOwner)
+        if(!this.isOwner(playerHash))
         {   
-            let error = "";    
-            this.#gameMod = this.setGameMod(gameModTemp,jlptTemp,roundsTemp);
-            if(typeof(this.#gameMod) =="undefined")
-            {
-                return "Error no gameMod fit : "+ gameModTemp;
-            }
-            this.#gameMod.createCardsSet(()=>
-            {
-                this.#rounds = roundsTemp;
-                this.#inLobby = true;
-                this.#canJoin = false;
-                let response = new GameResponse();
-                response.gameMod = gameModTemp;
-                this.redirectEveryone("game");
-            });
+            return "you are not allowed to launch"
         }
-        else
+         
+        this.#gameMod = this.setGameMod(this.#rules.gameMod,this.#rules.jlptLevel,this.#rules.rounds);
+        if(typeof(this.#gameMod) =="undefined")
         {
-            return "You are not allowed to start a game.";
+            return "Error no gameMod fit : "+ this.#rules.gameMod;
         }
+        this.#gameMod.createCardsSet(()=>
+        {
+            this.redirectEveryone("game");
+        });
     }
 
     start()
@@ -115,8 +114,9 @@ export default class Game
         var cardSet = this.#gameMod.getCardSet(0);
         var assignment = this.#gameMod.getAssignment(0);
         let response = new GameResponse();
-        response.round = {cards : cardSet ,assignment :assignment, round : 0}        
-        this.broadCast("ready",response);              
+        response.round = {cards : cardSet ,assignment :assignment, round : 0}     
+        this.broadCast("game:event",{event: "start"});     
+        this.broadCast("game:round",response);              
     }
 
     reLaunch()
@@ -130,8 +130,7 @@ export default class Game
         let FormattedList = this.getPlayerList();  
         this.#gameMod.createCardsSet(()=>
         {
-            this.broadCast("playerList", {playerList : FormattedList})
-            this.redirectEveryone("game");
+            this.broadCast("playerList", {playerList : FormattedList,redirect : "game" })
         });        
     }
 
@@ -153,12 +152,18 @@ export default class Game
         }
         if(this.#gameMod.checkAnswer(answer,player.currentRound))
         {
-            player.point +=100;
+            player.point +=100;            
             player.currentRound +=1;
             this.#playerList.set(playerHash, player)
             let FormattedList = this.getPlayerList()
-            this.broadCast("playerList", {playerList : FormattedList})
+            this.broadCast("game:playerList", {playerList : FormattedList})
+            return true;
+        }else
+        {
+            player.currentRound +=1;
+            return false;
         }
+       
     }
 
     nextRound(userHash)
@@ -169,6 +174,42 @@ export default class Game
         let response = new GameResponse();
         response.round = {cards : cardSet ,assignment :assignment, round : round}
         return response;
+    }
+
+    testRules(rules)
+    {
+        if(
+           typeof(rules.jlptLevel) == "undefined" 
+            || typeof(rules.jlptLevel) != "number" 
+            || rules.jlptLevel <0 
+            || rules.jlptLevel >5)
+        {
+            return "The rule : jlpt isn't correct";
+        }
+        if(typeof(rules.gameMod) == "undefined"||typeof(rules.gameMod) != "string")
+        {
+            return "The rule : gameMod isn't correct";
+        }
+        if(typeof(rules.rounds) == "undefined"
+            || typeof(rules.rounds) != "number" 
+            || rules.rounds <0 
+            || rules.rounds >60)
+        {
+            return "The rule : rounds isn't correct";
+        }
+        if(typeof(rules.timeout) == "undefined" 
+            || typeof(rules.timeout) != "number" 
+            || rules.timeout <0 
+            || rules.timeout >60)
+        {
+            return "The rule : timeout isn't correct";
+        }
+
+        this.#rules.jlptLevel = rules.jlptLevel;
+        this.#rules.rounds = rules.rounds;
+        this.#rules.gameMod = rules.gameMod;
+        this.#rules.timeout = rules.timeout;     
+
     }
 
     finishGame(playerHash)
@@ -208,7 +249,7 @@ export default class Game
     hasPlayerFinished(userHash)
     {
         let player = this.#playerList.get(userHash)
-        if(player.currentRound == this.#rounds)
+        if(player.currentRound == this.#rules.rounds)
         {
             this.finishGame(userHash)
             return true;
@@ -246,6 +287,23 @@ export default class Game
         return true;
     }
 
+    updateRules(userHash, rules)
+    {
+        if(!this.isOwner(userHash))
+        {
+            return "you are not allowed to change rules";
+        }
+
+        var error = this.testRules(rules)
+        if(typeof(error) != "undefined")
+        {
+            return error;
+        }
+
+        this.broadCast("game:rules",this.#rules);
+
+    }
+
     reconnect(userHash, pseudo)
     {
         if(this.#started)
@@ -266,6 +324,17 @@ export default class Game
             return true;
         }     
        
+    }
+
+    isOwner(userHash)
+    {
+        if(userHash == this.#gameOwner)
+        {
+            return true;
+        }else
+        {
+            false
+        }
     }
 
     leave(userHash)
@@ -296,7 +365,7 @@ export default class Game
 
     getTotalRound()
     {
-        return this.#rounds;
+        return this.#rules.rounds;
     }
 
     getPlayerList()
@@ -308,9 +377,11 @@ export default class Game
             playerListFormatted.push({
                 pseudo : player.pseudo, 
                 point : player.point,
-                hasFinished : player.hasFinished
+                hasFinished : player.hasFinished,
+                icon : player.icon
             })
         }
+        console.log()
         return playerListFormatted;
     }
 
@@ -330,7 +401,7 @@ export default class Game
         var FormattedList = this.getPlayerList();
         let response = new GameResponse()
         response.playerList = FormattedList;
-        this.broadCast("playerList",response)
+        this.broadCast("game:playerList",response)
     }
 
     getPlayer(playerHash)
@@ -342,7 +413,8 @@ export default class Game
     {
         return {
             hasEnded : this.#hasEnded,
-            hasStart : this.#started
+            hasStart : this.#started,
+            playerList : this.getPlayerList()
          }
     }
 
@@ -360,6 +432,7 @@ class GameResponse
     hasEnded;
     gameMod;
     rankingList;
+    redirect;
 }
 
 class PlayerProperty
@@ -369,4 +442,13 @@ class PlayerProperty
     hasFinished;
     owner;
     currentRound;
+    icon;
+}
+
+class Rules
+{
+    rounds = 1;
+    gameMod = "none";
+    timeout = 10;
+    jlptLevel = 5;
 }
