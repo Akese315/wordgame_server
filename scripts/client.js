@@ -13,8 +13,10 @@ export default class Client
     #disconnectCallback
     #readyCallback
     #answerCallback
+    #leaveCallback
     #restartCallback
     #updateRulesCallback
+
 
     SET_PSEUDO_EVENT= "player:pseudo";
     JOIN_GAME_EVENT= "game:join";
@@ -41,6 +43,7 @@ export default class Client
         this.#setAnswerEvent()
         this.#setDisconnectEvent() 
         this.#setUpdateRulesEvent();       
+        this.#setLeaveCallback();
     }
 
     #setJoinEvent()
@@ -87,22 +90,31 @@ export default class Client
     {
         this.#userSocket.on(this.GAME_EVENT,(data)=>
         {
-            if(typeof(data.event)!="undefined" && data.event=="launch")
+            if(typeof(data.event)!="undefined" )
             {                
-                this.#launchCallback();                
-            }
-            if(typeof(data.event)!="undefined" && data.event=="ready")
-            {
-                this.#readyCallback();
-            }
-            if(typeof(data.event)!="undefined" && data.event=="restart")
-            {
-                this.#restartCallback(data.restart); 
-            }
-            if(typeof(data.event)!="undefined" && data.event=="timeout")
-            {
+                if(data.event=="launch"){
+                    this.#launchCallback();      
+                }
+                if(data.event=="ready")
+                {
+                    this.#readyCallback();
+                }
+                if(data.event=="restart")
+                {
+                    this.#restartCallback(data.restart); 
+                }
+                if( data.event=="timeout")
+                {
                 
+                }
+                if( data.event=="leave")
+                {
+                    this.#leaveCallback()
+                }
+                          
             }
+            
+
         })
     }
 
@@ -184,6 +196,11 @@ export default class Client
     setRestartCallback(callback)
     {
         this.#restartCallback = callback;
+    }
+
+    setLeaveCallback(callback)
+    {
+        this.#leaveCallback = callback;
     }
 
     #connected()

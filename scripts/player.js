@@ -20,7 +20,7 @@ export class Player extends Client
         this.setAnswerCallback(this.receiveAnswer)
         this.setRestartCallback(this.restart)
         this.setUpdateRulesCallback(this.updateRules)
-        
+        this.setLeaveCallback(this.leave_game)
         //set randomly an icon
 
         this.setRandIcon();
@@ -41,6 +41,12 @@ export class Player extends Client
 
     disconnect()
     {   
+        leave_game()
+        console.log("User disconnected : "+this.getUserAdress())
+    }
+
+    leave_game()
+    {
         //disconnect the user
         let currentGame = this.#getGame()
         //get the game object
@@ -64,8 +70,9 @@ export class Player extends Client
                     //select the next user to be the new owner
                 }
             }
-        }       
-        console.log("User disconnected : "+this.getUserAdress())
+        }
+
+        this.sendRedirect("home");
     }
 
     restart()
