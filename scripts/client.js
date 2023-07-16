@@ -198,7 +198,7 @@ export default class Client
         this.#restartCallback = callback;
     }
 
-    setLeaveCallback(callback)
+    #setLeaveCallback(callback)
     {
         this.#leaveCallback = callback;
     }
