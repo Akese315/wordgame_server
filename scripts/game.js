@@ -91,6 +91,7 @@ export default class Game
 
     launch(playerHash)
     {
+        this.NumberPlayerReady = 0;
         if(!this.isOwner(playerHash))
         {   
             return "you are not allowed to launch"
@@ -221,8 +222,8 @@ export default class Game
         let response = new GameResponse();
         response.playerList = this.getPlayerList();
         response.hasEnded = this.#hasEnded;     
-        this.broadCast("playerList", response)      
-
+        this.broadCast("game:playerList", response)      
+        
         if(this.hasEveryoneFinished())
         {
             //quand tout les joueurs ont fini
@@ -230,13 +231,13 @@ export default class Game
             let response = new GameResponse();
             response.rankingList = this.getPlayerPseudo();
             //envoie à tout les joueurs le rankinglist
-            this.broadCast("rankingList",response)
+            this.broadCast("game:rankingList",response)
         }               
     }
 
     hasEveryoneFinished()
     {
-        for(let player of this.#playerList.keys())
+        for(let player of this.#playerList.values())
         {
             if(!player.hasFinished)
             {

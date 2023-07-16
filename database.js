@@ -215,6 +215,8 @@ export function getPoolConnection(callback)
 
 export async function createPoolConnection(callback)
 {   
+    console.log(process.env.MYSQL_PASSWORD)
+    console.log(process.env.MYSQL_USER)
     MysqlPoolObject = mysql.createPool(
         {
                 connectionLimit : 100,
@@ -228,6 +230,7 @@ export async function createPoolConnection(callback)
     console.log("database connected")
     getPoolConnection(async(connection)=>
     {
+        
         var now = Date.now();
         await createAlltable(connection);
         await isKanjiTableEmpty(connection);
