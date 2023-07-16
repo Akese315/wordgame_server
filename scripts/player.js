@@ -171,7 +171,7 @@ export class Player extends Client
     receiveAnswer(answer)
     {   
         let currentGame = this.#getGame();
-        correctAnswer = currentGame.checkAnswer(answer,this.getUserHash());
+        var correctAnswer = currentGame.checkAnswer(answer,this.getUserHash());
         if(correctAnswer)
         {
             this.sendResponse(this.ANSWER_GAME_EVENT, {answer : true});
