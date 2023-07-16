@@ -198,7 +198,7 @@ export default class Client
         this.#restartCallback = callback;
     }
 
-    #setLeaveCallback(callback)
+    setLeaveCallback(callback)
     {
         this.#leaveCallback = callback;
     }
@@ -260,8 +260,7 @@ export default class Client
 
     sendRedirect(redirect)
     {
-        let data = redirect;
-        this.#userSocket.emit("redirect", data)  
+        this.#userSocket.emit("redirect", redirect)  
     }
 
     sendResponse(eventName,dataObject)
