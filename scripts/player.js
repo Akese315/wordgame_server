@@ -41,7 +41,7 @@ export class Player extends Client
 
     disconnect()
     {   
-        leave_game()
+        this.leave_game()
         console.log("User disconnected : "+this.getUserAdress())
     }
 
