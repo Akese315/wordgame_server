@@ -36,14 +36,13 @@ export default class Client
 
     #setEvent()
     {
-        this.#setJoinEvent()
+        this.#setJoinEvent();
         this.#setGameEvent();
-        this.#setCreateEvent()
-        this.#setPseudoEvent()
-        this.#setAnswerEvent()
-        this.#setDisconnectEvent() 
+        this.#setCreateEvent();
+        this.#setPseudoEvent();
+        this.#setAnswerEvent();
+        this.#setDisconnectEvent();
         this.#setUpdateRulesEvent();       
-        this.#setLeaveCallback();
     }
 
     #setJoinEvent()
