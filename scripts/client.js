@@ -259,6 +259,7 @@ export default class Client
 
     sendRedirect(redirect)
     {
+        //console.log(redirect)
         this.#userSocket.emit("redirect", redirect)  
     }
 

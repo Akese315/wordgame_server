@@ -79,6 +79,7 @@ export class GameMod1 extends GameMod
 
     generateAnswers()
     {
+        this.rightAnswers = []
         for(let i = 0; i < this.getRounds(); i++)
         {
             this.rightAnswers.push(3*i+Math.floor(Math.random() * 3));

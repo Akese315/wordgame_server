@@ -26,7 +26,7 @@ export class Player extends Client
         this.setRandIcon();
 
         //when a player is created by default it sends him to the home
-        this.sendRedirect("home");
+        this.sendRedirect("/home");
     }
 
     launchGame()
@@ -72,7 +72,7 @@ export class Player extends Client
             }
         }
 
-        this.sendRedirect("home");
+        this.sendRedirect("/home");
     }
 
     restart()
@@ -97,25 +97,25 @@ export class Player extends Client
             if(!reconnected)
             {
                 this.#gameHash = undefined;
-                this.sendRedirect("home");
+                this.sendRedirect("/home");
                 this.sendInfo("You can't reconnect to the game.");
             }
             else
             {
-                this.sendRedirect("game");
+                this.sendRedirect("/game");
                 this.sendInfo("The player has a game, redirect to the game");
             }            
         }
         else
         {
-            this.sendRedirect("home");
+            this.sendRedirect("/home");
             this.sendInfo("Player has no game or ended");
         }
     }
 
     setReady()
     {
-        let currentGame = this.#getGame();
+        let currentGame =   this.#getGame();
         if(this.hasGame(currentGame))
         {
             if(currentGame.hasStarted())
@@ -130,7 +130,7 @@ export class Player extends Client
         }
         else
         {
-            this.sendRedirect("home");
+            this.sendRedirect("/home");
         }        
     }
 
@@ -216,10 +216,10 @@ export class Player extends Client
 
             if(currentGame.getGameStatus().hasStart)
             {
-                redirect = "game";
+                redirect = "/game";
             }else
             {
-                redirect = "lobby";
+                redirect = "/lobby";
             }   
 
             let response = {playerList : playerlist, isOwner : false, redirect : redirect};
@@ -239,7 +239,7 @@ export class Player extends Client
             isOwner : true,
             gameHash: this.#gameHash,
             playerList : playerList,
-            redirect : "lobby"
+            redirect : "/lobby"
         }        
         this.sendResponse("game:create", response);
     }

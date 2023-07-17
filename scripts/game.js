@@ -91,7 +91,6 @@ export default class Game
 
     launch(playerHash)
     {
-        this.NumberPlayerReady = 0;
         if(!this.isOwner(playerHash))
         {   
             return "you are not allowed to launch"
@@ -104,7 +103,23 @@ export default class Game
         }
         this.#gameMod.createCardsSet(()=>
         {
-            this.redirectEveryone("game");
+            this.redirectEveryone("/game");
+        });
+    }
+
+    restart(playerHash)
+    {
+        console.log("restarted")
+        if(!this.isOwner(playerHash))
+        {   
+            return "you are not allowed to launch"
+        }
+
+        this.#gameMod.createCardsSet(()=>
+        {
+            console.log("redirected")
+            this.redirectEveryone("/game");
+            this.broadCast("game:event", {"event":"restart"})
         });
     }
 
@@ -120,21 +135,7 @@ export default class Game
         this.broadCast("game:round",response);              
     }
 
-    reLaunch()
-    {
-        this.#started = false;
-        for(let playerHash of this.#playerList.keys())
-        {
-            let player = this.#playerList.get(playerHash)
-            player.point = 0;
-        }
-        let FormattedList = this.getPlayerList();  
-        this.#gameMod.createCardsSet(()=>
-        {
-            this.broadCast("playerList", {playerList : FormattedList,redirect : "game" })
-        });        
-    }
-
+   
     setPlayerReady()
     {  
         this.NumberPlayerReady +=1;
@@ -218,7 +219,6 @@ export default class Game
         let object = this.#playerList.get(playerHash);
         object.hasFinished = true;
         this.#playerList.set(playerHash, object)
-
         let response = new GameResponse();
         response.playerList = this.getPlayerList();
         response.hasEnded = this.#hasEnded;     
@@ -228,6 +228,8 @@ export default class Game
         {
             //quand tout les joueurs ont fini
             this.#hasEnded = true;
+            this.started = false
+            this.NumberPlayerReady = 0;
             let response = new GameResponse();
             response.rankingList = this.getPlayerPseudo();
             //envoie à tout les joueurs le rankinglist
