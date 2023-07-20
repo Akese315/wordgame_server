@@ -170,6 +170,7 @@ export class Player extends Client
 
     receiveAnswer(answer)
     {   
+        console.log(answer)
         let currentGame = this.#getGame();
         var correctAnswer = currentGame.checkAnswer(answer,this.getUserHash());
         if(correctAnswer)

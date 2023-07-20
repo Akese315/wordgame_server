@@ -114,7 +114,7 @@ export default class Game
         {   
             return "you are not allowed to launch"
         }
-
+        this.resetPlayerProperties()
         this.#gameMod.createCardsSet(()=>
         {
             console.log("redirected")
@@ -131,10 +131,24 @@ export default class Game
         var assignment = this.#gameMod.getAssignment(0);
         let response = new GameResponse();
         response.round = {cards : cardSet ,assignment :assignment, round : 0}     
+        this.resetPlayerProperties()
         this.broadCast("game:event",{event: "start"});     
         this.broadCast("game:round",response);              
     }
 
+
+    resetPlayerProperties()
+    {
+        this.#playerList.forEach(player => {
+            if(typeof(player) != "undefined")
+            {
+                player.hasFinished = false;
+                player.currentRound = 0;
+                player.point = 0;
+            }
+        });
+        this.alterPlayerList()
+    }
    
     setPlayerReady()
     {  
@@ -210,7 +224,8 @@ export default class Game
         this.#rules.jlptLevel = rules.jlptLevel;
         this.#rules.rounds = rules.rounds;
         this.#rules.gameMod = rules.gameMod;
-        this.#rules.timeout = rules.timeout;     
+        this.#rules.timeout = rules.timeout;    
+        console.log(this.#rules) 
 
     }
 
