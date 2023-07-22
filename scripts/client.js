@@ -13,7 +13,17 @@ export default class Client
     #disconnectCallback
     #readyCallback
     #answerCallback
+    #leaveCallback
     #restartCallback
+    #updateRulesCallback
+
+
+    SET_PSEUDO_EVENT= "player:pseudo";
+    JOIN_GAME_EVENT= "game:join";
+    CREATE_GAME_EVENT= "game:create";
+    UPDATE_RULES_EVENT= "game:rules";
+    GAME_EVENT = "game:event";
+    ANSWER_GAME_EVENT = "game:answer"
 
     constructor(socket, broadcast)
     {   
@@ -26,20 +36,18 @@ export default class Client
 
     #setEvent()
     {
-        this.#setJoinEvent()
-        this.#setCreateEvent()
-        this.#setPseudoEvent()
-        this.#setLaunchEvent()
-        this.#setReadyEvent()
-        this.#setAnswerEvent()
-        this.#setDisconnectEvent()
-        this.#setRestartEvent()
-        
+        this.#setJoinEvent();
+        this.#setGameEvent();
+        this.#setCreateEvent();
+        this.#setPseudoEvent();
+        this.#setAnswerEvent();
+        this.#setDisconnectEvent();
+        this.#setUpdateRulesEvent();       
     }
 
     #setJoinEvent()
     {
-        this.#userSocket.on("join", (data)=>
+        this.#userSocket.on(this.JOIN_GAME_EVENT, (data)=>
         {   
             if(this.checkHash(data.userHash) || this.checkHash(data.gameHash))
             {
@@ -51,9 +59,20 @@ export default class Client
         });
     }
 
+    #setUpdateRulesEvent()
+    {
+        this.#userSocket.on(this.UPDATE_RULES_EVENT, (data)=>
+        {
+            if(typeof(data)!="undefined")
+            {
+                this.#updateRulesCallback(data)
+            }           
+        });
+    }
+
     #setCreateEvent()
     {
-        this.#userSocket.on("create", (data)=>
+        this.#userSocket.on(this.CREATE_GAME_EVENT, (data)=>
         {
             if(this.checkHash(data.userHash))
             {
@@ -66,9 +85,41 @@ export default class Client
         });
     }
 
+    #setGameEvent()
+    {
+        this.#userSocket.on(this.GAME_EVENT,(data)=>
+        {
+            if(typeof(data.event)!="undefined" )
+            {                
+                if(data.event=="launch"){
+                    this.#launchCallback();      
+                }
+                if(data.event=="ready")
+                {
+                    this.#readyCallback();
+                }
+                if(data.event=="restart")
+                {
+                    this.#restartCallback(data.restart); 
+                }
+                if( data.event=="timeout")
+                {
+                
+                }
+                if( data.event=="leave")
+                {
+                    this.#leaveCallback()
+                }
+                          
+            }
+            
+
+        })
+    }
+
     #setAnswerEvent()
     {
-        this.#userSocket.on("answer",(data)=>
+        this.#userSocket.on(this.ANSWER_GAME_EVENT,(data)=>
         {            
             if(typeof(data.answer) != "undefined" || data.answer != "")
             {
@@ -80,25 +131,9 @@ export default class Client
         })
     }
 
-    #setReadyEvent()
-    {
-        this.#userSocket.on("ready",(data)=>
-        {            
-            this.#readyCallback(data.isReady);            
-        })
-    }
-
-    #setRestartEvent()
-    {
-        this.#userSocket.on("restart",(data)=>
-        {            
-            this.#restartCallback(data);            
-        })
-    }
-
     #setPseudoEvent()
     {
-        this.#userSocket.on("setPseudo", (data)=>
+        this.#userSocket.on(this.SET_PSEUDO_EVENT, (data)=>
         {
             if(this.checkHash(data.userHash))
             {
@@ -109,28 +144,6 @@ export default class Client
             } 
         });
     }
-
-    #setLaunchEvent()
-    {
-        this.#userSocket.on("launch",(data)=>
-        {
-            if(
-            this.checkHash(data.userHash) && 
-            typeof(data.jlpt) !="undefined" && 
-            typeof(data.jlpt) =="number" &&
-            typeof(data.gameMod) != "undefined"&&
-            typeof(data.gameMod) == "string" &&
-            typeof(data.round) !="undefined"&&
-            typeof(data.round) =="number")
-            {
-                this.#launchCallback(data);
-            }else
-            {
-                 this.sendError("Non valid userHash")
-            }
-        })
-    }
-
 
     #setDisconnectEvent()
     {
@@ -153,11 +166,16 @@ export default class Client
     setAnswerCallback(callback)
     {
         this.#answerCallback = callback;
-    } 
-    
+    }
+
     setCreateCallback(callback)
     {
         this.#createCallback = callback;
+    }
+    
+    setUpdateRulesCallback(callback)
+    {
+        this.#updateRulesCallback = callback;
     }
 
     setReadyCallback(callback)
@@ -177,6 +195,11 @@ export default class Client
     setRestartCallback(callback)
     {
         this.#restartCallback = callback;
+    }
+
+    setLeaveCallback(callback)
+    {
+        this.#leaveCallback = callback;
     }
 
     #connected()
@@ -227,12 +250,17 @@ export default class Client
         this.#userSocket.emit("error",error)
     }
 
-    sendInfo(redirect, message)
+    sendInfo(message)
     {
-        let info = {redirect : undefined, message: undefined}
-        info.redirect = redirect;
+        let info = {message: undefined}
         info.message = message;
         this.#userSocket.emit("info", info)
+    }
+
+    sendRedirect(redirect)
+    {
+        //console.log(redirect)
+        this.#userSocket.emit("redirect", redirect)  
     }
 
     sendResponse(eventName,dataObject)
@@ -253,9 +281,6 @@ export default class Client
         }
         return true;
     }
-
-
-
 }
 
 

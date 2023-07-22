@@ -12,30 +12,34 @@ import dotenv from 'dotenv'
 
 dotenv.config();  
 var MysqlPoolObject
-var INSERT_USER_STATEMENT =`INSERT INTO users (userHash,userName) VALUES(?,?)`;
-var INSERT_GAME_STATEMENT =`INSERT INTO games (gameHash,ownerHash) VALUES(?,?)`;
-var INNER_JOIN_GAME_USER = "SELECT * FROM GAME INNER JOIN B ON A.key = B.key"
-var SELECT_WHERE_GAME = "SELECT * FROM users WHERE gameHash=?"
-var SELECT_ALL_GAME = "SELECT * FROM games"
-var USER_EXISTS = "SELECT * FROM users WHERE userHash =?"
-var IS_USER_OWNER = "SELECT gameHash FROM games WHERE ownerHash=?"    
-var KANJI_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS kanjis (id integer PRIMARY KEY AUTO_INCREMENT, kanji VARCHAR(1) CHARACTER SET utf8 COLLATE utf8_general_ci ,reading_on VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci ,reading_kun VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci ,meaning VARCHAR(255),jlpt integer);"
-var READING_KUN_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS readings_kun (id integer PRIMARY KEY AUTO_INCREMENT,reading_kun VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci);"
-var WORD_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS words(id integer PRIMARY KEY AUTO_INCREMENT,word VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci,meaning VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci, furigana VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci, romaji VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci, jlpt integer NOT NULL);"
-var READING_ON_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS readings_on (id integer PRIMARY KEY AUTO_INCREMENT,reading_on VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci);"
-var READING_KUN_TO_KANJI_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS kanjisToReadingsKun(idKanji integer,idReadingKun integer);"
-var READING_ON_TO_KANJI_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS kanjisToReadingsOn(idKanji integer,idReadingOn integer);"
-var WORD_TO_KANJI_EXISTS = "CREATE TABLE IF NOT EXISTS wordsToKanji(idKanji integer,idWord integer);"
-var IS_KANJI_TABLE_EMPTY = "SELECT * FROM kanjis LIMIT 1"
-var IS_READINGS_KUN_TABLE_EMPTY = "SELECT * FROM readings_kun LIMIT 1"
-var IS_READINGS_ON_TABLE_EMPTY = "SELECT * FROM readings_on LIMIT 1"
-var IS_KANJI_TO_READING_KUN_EMPTY = "SELECT * FROM kanjisToReadingsKun limit 1"
-var IS_KANJI_TO_READING_ON_EMPTY = "SELECT * FROM kanjisToReadingsOn limit 1"
-var IS_WORDS_EMPTY = "SELECT * FROM words limit 1"
-var IS_WORD_TO_KANJI_EMPTY = "SELECT * FROM wordsToKanji limit 1"
-var SELECT_RANDOM_WORD = "SELECT * FROM words WHERE jlpt=? ORDER BY RAND() LIMIT ?"
-var SELECT_RANDOM_KANJIS = "SELECT * FROM kanjis WHERE jlpt=? ORDER BY RAND() LIMIT ?"
-var SELECT_WORDS_RELATED_TO_KANJISID = "select * from wordsToKanji inner join words ON wordsToKanji.idWord = words.id where idKanji=? LIMIT ?;"
+const INSERT_USER_STATEMENT =`INSERT INTO users (userHash,userName) VALUES(?,?)`;
+const INSERT_GAME_STATEMENT =`INSERT INTO games (gameHash,ownerHash) VALUES(?,?)`;
+const INNER_JOIN_GAME_USER = "SELECT * FROM GAME INNER JOIN B ON A.key = B.key"
+const SELECT_WHERE_GAME = "SELECT * FROM users WHERE gameHash=?"
+const SELECT_ALL_GAME = "SELECT * FROM games"
+const USER_EXISTS = "SELECT * FROM users WHERE userHash =?"
+const IS_USER_OWNER = "SELECT gameHash FROM games WHERE ownerHash=?"    
+const KANJI_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS kanjis (id integer PRIMARY KEY AUTO_INCREMENT, kanji VARCHAR(1) CHARACTER SET utf8 COLLATE utf8_general_ci ,reading_on VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci ,reading_kun VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci ,meaning VARCHAR(255),jlpt integer);"
+const READING_KUN_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS readings_kun (id integer PRIMARY KEY AUTO_INCREMENT,reading_kun VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci);"
+const WORD_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS words(id integer PRIMARY KEY AUTO_INCREMENT,word VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci,meaning VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci, furigana VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci, romaji VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci, jlpt integer NOT NULL);"
+const READING_ON_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS readings_on (id integer PRIMARY KEY AUTO_INCREMENT,reading_on VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci);"
+const READING_KUN_TO_KANJI_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS kanjisToReadingsKun(idKanji integer,idReadingKun integer);"
+const READING_ON_TO_KANJI_TABLE_EXISTS = "CREATE TABLE IF NOT EXISTS kanjisToReadingsOn(idKanji integer,idReadingOn integer);"
+const WORD_TO_KANJI_EXISTS = "CREATE TABLE IF NOT EXISTS wordsToKanji(idKanji integer,idWord integer);"
+const IS_KANJI_TABLE_EMPTY = "SELECT * FROM kanjis LIMIT 1"
+const IS_READINGS_KUN_TABLE_EMPTY = "SELECT * FROM readings_kun LIMIT 1"
+const IS_READINGS_ON_TABLE_EMPTY = "SELECT * FROM readings_on LIMIT 1"
+const IS_KANJI_TO_READING_KUN_EMPTY = "SELECT * FROM kanjisToReadingsKun limit 1"
+const IS_KANJI_TO_READING_ON_EMPTY = "SELECT * FROM kanjisToReadingsOn limit 1"
+const IS_WORDS_EMPTY = "SELECT * FROM words limit 1"
+const IS_WORD_TO_KANJI_EMPTY = "SELECT * FROM wordsToKanji limit 1"
+const SELECT_RANDOM_WORD = "SELECT * FROM words WHERE jlpt=? ORDER BY RAND() LIMIT ?"
+const SELECT_RANDOM_KANJIS = "SELECT * FROM kanjis WHERE jlpt=? ORDER BY RAND() LIMIT ?;"
+const SELECT_WORDS_RELATED_TO_KANJISID = "select * from wordsToKanji inner join words ON wordsToKanji.idWord = words.id where idKanji=? LIMIT ?;"
+const SELECT_WORDS_RELATED_TO_KANJIS = "select W.meaning, W.word from wordsToKanji WtK JOIN (select id from kanjis where jlpt=? ORDER BY RAND() LIMIT 1)  K ON WtK.idKanji = K.id JOIN words W ON WtK.idWord = W.id LIMIT ?;"
+
+
+const total_kanji_rows = 2136;
 
 async function addUser(name,hash, connection)
 {
@@ -106,14 +110,40 @@ async function createAlltable(connection)
 
 export async function getRandomKanjis(connection, limit, jlpt)
 {
-    var [rows] = await connection.query(SELECT_RANDOM_KANJIS,[jlpt,limit])
-    return rows;
+    var rowslen = 0;
+    var myarray = new Array()
+    var delta = limit - rowslen;
+    while(delta != 0)
+    {
+        var [rows] = await connection.query(SELECT_RANDOM_KANJIS,[jlpt,delta])
+        myarray = myarray.concat(rows)
+        delta = limit - myarray.length;
+    }
+    return myarray;
 }
 
 export async function getRandomWords(connection, limit,jlpt )
 {
     var [rows] = await connection.query(SELECT_RANDOM_WORD,[jlpt, limit]);
     return rows;
+}
+
+export async function getRandomWordsWithKanjis(connection, limit, jlpt)
+{
+    var array = new Array()
+    for(var i  = 0; i < limit; i++)
+    {
+        var [rows] = await connection.query(SELECT_WORDS_RELATED_TO_KANJIS, [jlpt, 3,])
+        if (rows.length != 3 )
+        {
+            i--;
+        }
+        else
+        {
+            array.push(rows)
+        }
+    }
+    return array;
 }
 
 export async function getWordsRelatedToKanjisID(connection,id,limit)
@@ -215,6 +245,8 @@ export function getPoolConnection(callback)
 
 export async function createPoolConnection(callback)
 {   
+    console.log(process.env.MYSQL_PASSWORD)
+    console.log(process.env.MYSQL_USER)
     MysqlPoolObject = mysql.createPool(
         {
                 connectionLimit : 100,
@@ -228,6 +260,7 @@ export async function createPoolConnection(callback)
     console.log("database connected")
     getPoolConnection(async(connection)=>
     {
+        
         var now = Date.now();
         await createAlltable(connection);
         await isKanjiTableEmpty(connection);

@@ -1,4 +1,4 @@
-import { getPoolConnection,releaseConnection, getRandomKanjis,getRandomWords,getWordsRelatedToKanjisID} from "../database.js";
+import { getPoolConnection,releaseConnection,getRandomWordsWithKanjis, getRandomKanjis,getRandomWords,getWordsRelatedToKanjisID} from "../database.js";
 
 
 function mixCards(list)
@@ -70,7 +70,7 @@ export class GameMod1 extends GameMod
         getPoolConnection(async(connection)=>
         {
             let cardNumber = this.CARD_BY_ROUND*this.getRounds();
-            this.cards = await getRandomKanjis(connection, cardNumber, this.getJlptLevel());            
+            this.cards = await getRandomKanjis(connection, cardNumber, this.getJlptLevel());         
             this.generateAnswers()
             releaseConnection(connection)
             callback();                      
@@ -79,6 +79,7 @@ export class GameMod1 extends GameMod
 
     generateAnswers()
     {
+        this.rightAnswers = []
         for(let i = 0; i < this.getRounds(); i++)
         {
             this.rightAnswers.push(3*i+Math.floor(Math.random() * 3));
@@ -87,6 +88,10 @@ export class GameMod1 extends GameMod
 
     getCardSet(round)
     {
+        console.log("taille de la liste -1 " + (this.cards.length-1))
+        console.log("index de la liste "+(round*3))
+        console.log("index de la liste "+(round*3+1))
+        console.log("index de la liste "+(round*3+2))
         if(round > this.cards.length || round < this.cards.length)
         {
             return [this.cards[3*round].kanji,this.cards[3*round+1].kanji,this.cards[3*round+2].kanji ]
@@ -179,6 +184,7 @@ export class GameMod2 extends GameMod
 
 export class GameMod3 extends GameMod
 {
+    rightAnswers = []
 
     constructor(jlpt,rounds)
     {
@@ -187,5 +193,56 @@ export class GameMod3 extends GameMod
     getThreeRandomCard()
     {
 
+    }
+
+    createCardsSet(callback)
+    {
+        getPoolConnection(async(connection)=>
+        {
+            let cardNumber = this.getRounds();
+            this.cards = await getRandomWordsWithKanjis(connection, cardNumber, this.getJlptLevel())       
+            this.generateAnswers()
+            releaseConnection(connection)
+            callback();                      
+        })
+    }
+
+    generateAnswers()
+    {
+        this.rightAnswers = []
+        for(let i = 0; i < this.getRounds(); i++)
+        {
+            this.rightAnswers.push(Math.floor(Math.random() * 3));
+        }
+    }
+
+    getCardSet(round)
+    {
+        console.log(this.cards[round])
+        if(round > this.cards.length || round < this.cards.length)
+        {
+            return [this.cards[round][0].word,this.cards[round][1].word,this.cards[round][2].word ]
+        }        
+    }
+
+    getAssignment(round)
+    {
+        return "Find the right word for the meaning: 「"+this.cards[round][this.rightAnswers[round]].meaning+"」."
+    }
+
+    checkAnswer(answer, round)
+    {   
+        if(round >= this.getRounds())
+        {
+            return false;
+        }
+        if(answer == this.cards[round][this.rightAnswers[round]].word)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 }

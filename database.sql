@@ -67,3 +67,22 @@ INSERT INTO users (userHash,userName, gameHash) VALUES (1234, "Axel",100000);
 INSERT INTO users (userHash,userName, gameHash) VALUES (2222, "alain",100000);
 
 SELECT * FROM users RIGHT JOIN games ON games.gameHash = users.gameHash WHERE games.gameHash IS NULL;
+
+
+/*
+
+SELECT W.word
+FROM WordsToKanji AS WT
+JOIN kanjis AS K ON WT.KanjiID = K.ID
+JOIN words AS W ON WT.WordID = W.ID
+WHERE K.ID IN (
+    SELECT KanjiID
+    FROM wordsToKanji
+    WHERE WordID = (
+        SELECT ID
+        FROM Words
+        WHERE Word = 'votre_mot'
+    )
+);
+
+*/

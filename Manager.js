@@ -18,11 +18,11 @@ class GameManager
         return this.#gamesNumber;
     }
 
-    addGame(playerHash, pseudo)
+    addGame(playerHash, pseudo,icon)
     {  
         var gameHash = getValidToken(this.#gameList);
         var game = new Game(gameHash);  
-        game.setOwner(playerHash,pseudo);        
+        game.setOwner(playerHash,pseudo,icon);        
         this.#gameList.set(gameHash, game)
         this.#gamesNumber +=1;
         return gameHash;
